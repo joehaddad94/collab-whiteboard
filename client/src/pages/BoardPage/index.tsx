@@ -3,6 +3,7 @@ import { Toolbar } from "../../components/Toolbar";
 import { CursorOverlay } from "../../components/CursorOverlay";
 import { UserList } from "../../components/UserList";
 import { InvitePanel } from "../../components/InvitePanel";
+import { ChatPanel } from "../../components/ChatPanel";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -13,6 +14,8 @@ export function BoardPage() {
     connected,
     onlineMembers,
     cursors,
+    messages,
+    sendMessage,
     socketError,
     clearSocketError,
     saveStatus,
@@ -33,6 +36,8 @@ export function BoardPage() {
     showInvitePanel,
     setShowInvitePanel,
     updateInviteCode,
+    showChat,
+    setShowChat,
   } = useBoardPage();
 
   return (
@@ -72,6 +77,13 @@ export function BoardPage() {
           )}
           <button
             type="button"
+            className="btn btn-ghost"
+            onClick={() => setShowChat((prev) => !prev)}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
             className="btn btn-primary"
             onClick={() => void save()}
             disabled={saveStatus === "saving"}
@@ -102,29 +114,40 @@ export function BoardPage() {
       )}
 
       <div className="board-canvas-area">
-        {userId !== null && (
-          <>
-            <Whiteboard
-              userId={userId}
-              tool={tool}
-              color={color}
-              brushSize={brushSize}
-              socket={socket}
-              onStrokesChange={handleStrokesChange}
-            />
-            <Toolbar
-              tool={tool}
-              onToolChange={setTool}
-              color={color}
-              onColorChange={setColor}
-              brushSize={brushSize}
-              onBrushSizeChange={setBrushSize}
-              onUndo={undo}
-              onRedo={redo}
-              onClear={clearBoard}
-            />
-            <CursorOverlay cursors={cursors} />
-          </>
+        <div className="board-canvas-region">
+          {userId !== null && (
+            <>
+              <Whiteboard
+                userId={userId}
+                tool={tool}
+                color={color}
+                brushSize={brushSize}
+                socket={socket}
+                onStrokesChange={handleStrokesChange}
+              />
+              <Toolbar
+                tool={tool}
+                onToolChange={setTool}
+                color={color}
+                onColorChange={setColor}
+                brushSize={brushSize}
+                onBrushSizeChange={setBrushSize}
+                onUndo={undo}
+                onRedo={redo}
+                onClear={clearBoard}
+              />
+              <CursorOverlay cursors={cursors} />
+            </>
+          )}
+        </div>
+
+        {showChat && userId !== null && (
+          <ChatPanel
+            messages={messages}
+            currentUserId={userId}
+            onSend={sendMessage}
+            onClose={() => setShowChat(false)}
+          />
         )}
       </div>
     </div>

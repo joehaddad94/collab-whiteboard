@@ -61,3 +61,12 @@ export interface BoardMember {
   displayName: string;
   role: BoardRole;
 }
+
+export interface ChatMessage {
+  id: number;
+  boardId: number;
+  userId: number;
+  displayName: string;
+  text: string;
+  createdAt: string;
+}

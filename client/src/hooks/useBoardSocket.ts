@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import type { ConnectedUser, CursorPosition } from "../types";
+import type { ChatMessage, ConnectedUser, CursorPosition } from "../types";
 
 const SOCKET_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
@@ -17,6 +17,7 @@ export function useBoardSocket(boardId: number) {
   const [connected, setConnected] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [cursors, setCursors] = useState<Record<number, CursorPosition>>({});
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [leaveReason, setLeaveReason] = useState<BoardLeaveReason>(null);
   const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -42,9 +43,19 @@ export function useBoardSocket(boardId: number) {
       setSocketError(message);
     });
 
-    socket.on("board-joined", (payload: { users: ConnectedUser[] }) => {
-      setSocketError(null);
-      setConnectedUsers(payload.users);
+    socket.on(
+      "board-joined",
+      (payload: { users: ConnectedUser[]; messages: ChatMessage[] }) => {
+        setSocketError(null);
+        setConnectedUsers(payload.users);
+        setMessages(payload.messages);
+      },
+    );
+
+    // Broadcast to the whole room including the sender (ADR-020) - no
+    // optimistic local echo, so there's no duplicate-message reconciliation.
+    socket.on("chat-message", (message: ChatMessage) => {
+      setMessages((prev) => [...prev, message]);
     });
 
     socket.on("user-joined", (user: ConnectedUser) => {
@@ -79,11 +90,17 @@ export function useBoardSocket(boardId: number) {
     setSocketError(null);
   }
 
+  function sendMessage(text: string) {
+    socket?.emit("chat-message", { text });
+  }
+
   return {
     socket,
     connected,
     connectedUsers,
     cursors,
+    messages,
+    sendMessage,
     leaveReason,
     socketError,
     clearSocketError,

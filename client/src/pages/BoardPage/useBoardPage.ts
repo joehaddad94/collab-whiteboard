@@ -30,12 +30,15 @@ export function useBoardPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   const {
     socket,
     connected,
     connectedUsers,
     cursors,
+    messages,
+    sendMessage,
     leaveReason,
     socketError,
     clearSocketError,
@@ -145,6 +148,8 @@ export function useBoardPage() {
     connectedUsers,
     onlineMembers,
     cursors,
+    messages,
+    sendMessage,
     socketError,
     clearSocketError,
     saveStatus,
@@ -165,5 +170,7 @@ export function useBoardPage() {
     showInvitePanel,
     setShowInvitePanel,
     updateInviteCode,
+    showChat,
+    setShowChat,
   };
 }
