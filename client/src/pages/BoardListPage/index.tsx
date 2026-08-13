@@ -33,7 +33,11 @@ export function BoardListPage() {
             placeholder="New board name"
             maxLength={100}
           />
-          <button type="submit" disabled={creating || !newBoardName.trim()}>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={creating || !newBoardName.trim()}
+          >
             {creating ? "Creating…" : "Create board"}
           </button>
         </form>
@@ -56,10 +60,14 @@ export function BoardListPage() {
                       autoFocus
                       maxLength={100}
                     />
-                    <button type="button" onClick={() => handleRename(board.id)}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => handleRename(board.id)}
+                    >
                       Save
                     </button>
-                    <button type="button" onClick={cancelRename}>
+                    <button type="button" className="btn btn-ghost" onClick={cancelRename}>
                       Cancel
                     </button>
                   </div>
@@ -71,10 +79,18 @@ export function BoardListPage() {
                     </Link>
                     {board.role === "owner" && (
                       <div className="board-list-actions">
-                        <button type="button" onClick={() => startRename(board)}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={() => startRename(board)}
+                        >
                           Rename
                         </button>
-                        <button type="button" onClick={() => handleDelete(board.id)}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-danger"
+                          onClick={() => handleDelete(board.id)}
+                        >
                           Delete
                         </button>
                       </div>
