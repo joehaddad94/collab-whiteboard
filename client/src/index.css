@@ -465,6 +465,61 @@ a {
   margin: 12px 16px 0;
 }
 
+.invite-panel {
+  margin: 12px 16px 0;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.invite-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.invite-panel-head h3 {
+  font-size: 14px;
+}
+.invite-email-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.invite-email-form input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+}
+.invite-feedback {
+  font-size: 12.5px;
+  margin: 0 0 8px;
+}
+.invite-feedback-success {
+  color: var(--success);
+}
+.invite-feedback-error {
+  color: var(--danger);
+}
+.invite-link-row {
+  display: flex;
+  gap: 8px;
+}
+.invite-link-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  color: var(--ink-600);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
 .board-canvas-area {
   position: relative;
   flex: 1;

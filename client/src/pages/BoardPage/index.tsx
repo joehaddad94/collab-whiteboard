@@ -2,6 +2,7 @@ import { Whiteboard } from "../../components/Whiteboard";
 import { Toolbar } from "../../components/Toolbar";
 import { CursorOverlay } from "../../components/CursorOverlay";
 import { UserList } from "../../components/UserList";
+import { InvitePanel } from "../../components/InvitePanel";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -29,6 +30,9 @@ export function BoardPage() {
     undo,
     redo,
     clearBoard,
+    showInvitePanel,
+    setShowInvitePanel,
+    updateInviteCode,
   } = useBoardPage();
 
   return (
@@ -57,6 +61,15 @@ export function BoardPage() {
 
         <div className="board-presence">
           <UserList members={onlineMembers} />
+          {board?.role === "owner" && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setShowInvitePanel((prev) => !prev)}
+            >
+              Invite
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-primary"
@@ -67,6 +80,15 @@ export function BoardPage() {
           </button>
         </div>
       </div>
+
+      {showInvitePanel && board && (
+        <InvitePanel
+          boardId={board.id}
+          inviteCode={board.inviteCode}
+          onInviteCodeChange={updateInviteCode}
+          onClose={() => setShowInvitePanel(false)}
+        />
+      )}
 
       {loadError && <p className="form-error board-page-banner">{loadError}</p>}
       {saveError && <p className="form-error board-page-banner">{saveError}</p>}

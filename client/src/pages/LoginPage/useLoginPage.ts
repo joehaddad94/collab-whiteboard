@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { ApiRequestError } from "../../hooks/useApi";
 
 export function useLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/boards";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export function useLoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      navigate("/boards");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Login failed");
     } finally {

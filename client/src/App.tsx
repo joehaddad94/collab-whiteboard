@@ -6,6 +6,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { BoardListPage } from "./pages/BoardListPage";
 import { BoardPage } from "./pages/BoardPage";
+import { JoinBoardPage } from "./pages/JoinBoardPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/boards" element={<BoardListPage />} />
               <Route path="/boards/:id" element={<BoardPage />} />
+              <Route path="/join/:code" element={<JoinBoardPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/boards" replace />} />
           </Routes>

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, type Location } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { ApiRequestError } from "../../hooks/useApi";
 
@@ -8,6 +8,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function useSignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/boards";
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +36,7 @@ export function useSignupPage() {
     setSubmitting(true);
     try {
       await signup(email, password, displayName.trim());
-      navigate("/boards");
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Signup failed");
     } finally {

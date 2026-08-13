@@ -29,6 +29,8 @@ export function useBoardPage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+
   const {
     socket,
     connected,
@@ -125,6 +127,10 @@ export function useBoardPage() {
     socket?.emit("clear-board");
   }
 
+  function updateInviteCode(code: string) {
+    setBoard((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+  }
+
   const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
   const onlineMembers = connectedUsers.map((u) => ({
     ...u,
@@ -156,5 +162,8 @@ export function useBoardPage() {
     undo,
     redo,
     clearBoard,
+    showInvitePanel,
+    setShowInvitePanel,
+    updateInviteCode,
   };
 }
