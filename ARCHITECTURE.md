@@ -862,6 +862,24 @@ oversight.
 
 ---
 
+## ADR-024: `join-board` leaves any previously-joined room first
+
+**Decision:** In `sockets/board.ts`'s `join-board` handler, if the socket already has a
+different `currentBoardId` set when a new `join-board` arrives, the existing
+`leaveBoard()` cleanup runs for the old board before the new join proceeds — same
+function already used for explicit `leave-board` and `disconnect`.
+
+**Context:** Found during the backend audit: the handler only ever overwrote
+`currentBoardId`, never checked whether the socket was already in a different room.
+Nothing in the current (still-being-built) frontend triggers this today, but the
+server shouldn't rely on a well-behaved client for correctness — a socket that joined
+a new board without an explicit leave would keep receiving the old board's events
+indefinitely, and its stale `connectedUsers` entry there would never clear.
+
+**Trade-offs:** None — purely closes a gap, reuses existing cleanup code.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

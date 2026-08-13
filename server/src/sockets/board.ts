@@ -41,6 +41,11 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       return;
     }
 
+    const previousBoardId = socket.data.currentBoardId as number | undefined;
+    if (previousBoardId !== undefined && previousBoardId !== boardId) {
+      leaveBoard(socket, previousBoardId);
+    }
+
     const roomName = String(boardId);
     socket.join(roomName);
     socket.data.currentBoardId = boardId;
