@@ -6,6 +6,7 @@ export function BoardPage() {
   const {
     board,
     loadError,
+    socket,
     connected,
     connectedUsers,
     socketError,
@@ -60,7 +61,13 @@ export function BoardPage() {
       <div className="board-canvas-area">
         {userId !== null && (
           <>
-            <Whiteboard userId={userId} tool={tool} color={color} brushSize={brushSize} />
+            <Whiteboard
+              userId={userId}
+              tool={tool}
+              color={color}
+              brushSize={brushSize}
+              socket={socket}
+            />
             <Toolbar
               tool={tool}
               onToolChange={setTool}

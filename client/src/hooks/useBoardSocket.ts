@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type { ConnectedUser } from "../types";
 
@@ -7,11 +7,13 @@ const SOCKET_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 export type BoardLeaveReason = "removed" | "board-deleted" | null;
 
 // Owns the live socket connection for one board: join/leave lifecycle,
-// connection status, and who else is currently on the board. Drawing/cursor/
-// undo-redo state gets added here incrementally as the pieces that consume
-// them (Whiteboard, Toolbar) get built, rather than speculatively up front.
+// connection status, and who else is currently on the board. The socket
+// itself is exposed (as state, so consumers re-render when it becomes
+// available) so Whiteboard can emit/listen for drawing events directly -
+// stroke data is high-frequency and imperative-canvas-driven, so it doesn't
+// belong in this hook's React state (see useWhiteboard).
 export function useBoardSocket(boardId: number) {
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [leaveReason, setLeaveReason] = useState<BoardLeaveReason>(null);
@@ -21,7 +23,7 @@ export function useBoardSocket(boardId: number) {
     if (!Number.isInteger(boardId)) return;
 
     const socket = io(SOCKET_BASE, { withCredentials: true });
-    socketRef.current = socket;
+    setSocket(socket);
     setLeaveReason(null);
     setSocketError(null);
 
@@ -58,7 +60,7 @@ export function useBoardSocket(boardId: number) {
     return () => {
       socket.emit("leave-board", { boardId });
       socket.disconnect();
-      socketRef.current = null;
+      setSocket(null);
     };
   }, [boardId]);
 
@@ -67,6 +69,7 @@ export function useBoardSocket(boardId: number) {
   }
 
   return {
+    socket,
     connected,
     connectedUsers,
     leaveReason,

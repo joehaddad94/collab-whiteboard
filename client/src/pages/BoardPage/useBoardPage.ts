@@ -21,7 +21,7 @@ export function useBoardPage() {
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
 
-  const { connected, connectedUsers, leaveReason, socketError, clearSocketError } =
+  const { socket, connected, connectedUsers, leaveReason, socketError, clearSocketError } =
     useBoardSocket(boardId);
 
   useEffect(() => {
@@ -55,6 +55,7 @@ export function useBoardPage() {
   return {
     board,
     loadError,
+    socket,
     connected,
     connectedUsers,
     socketError,

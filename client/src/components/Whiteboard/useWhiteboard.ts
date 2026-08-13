@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
+import type { Socket } from "socket.io-client";
 import type { Point, Stroke, Tool } from "../../types";
 
 interface UseWhiteboardOptions {
@@ -6,6 +7,7 @@ interface UseWhiteboardOptions {
   tool: Tool;
   color: string;
   brushSize: number;
+  socket: Socket | null;
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
@@ -29,13 +31,16 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 
 // Strokes are drawn to the canvas imperatively (not via React re-render) while
 // active, for the same reason ADR-018 calls out: repainting the whole canvas
-// per pointer-move is wasteful. React state (`strokes`) only gets updated once
-// a stroke finishes - it exists as the source of truth for full redraws
-// (resize, and later undo/redo/sync), not for driving the live drawing itself.
-export function useWhiteboard({ userId, tool, color, brushSize }: UseWhiteboardOptions) {
+// per pointer-move is wasteful. This applies to remote strokes exactly the
+// same way as local ones - both are drawn segment-by-segment straight to the
+// canvas as points arrive, and only committed to `strokes` React state once
+// finished, since that state exists for full redraws (resize now; undo/redo/
+// initial-load sync), not for driving the live drawing itself.
+export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhiteboardOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentStrokeRef = useRef<Stroke | null>(null);
+  const remoteInProgressRef = useRef<Map<string, Stroke>>(new Map());
   const strokesRef = useRef<Stroke[]>([]);
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -78,6 +83,54 @@ export function useWhiteboard({ userId, tool, color, brushSize }: UseWhiteboardO
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleBoardJoined(payload: { strokes: Stroke[] }) {
+      setStrokes(payload.strokes);
+    }
+
+    function handleRemoteStrokeStart(stroke: Stroke) {
+      remoteInProgressRef.current.set(stroke.id, stroke);
+      const ctx = canvasRef.current?.getContext("2d");
+      if (ctx) drawStroke(ctx, stroke);
+    }
+
+    function handleRemoteStrokePoint({
+      strokeId,
+      point,
+    }: {
+      strokeId: string;
+      point: Point;
+    }) {
+      const stroke = remoteInProgressRef.current.get(strokeId);
+      if (!stroke) return;
+      stroke.points.push(point);
+      const ctx = canvasRef.current?.getContext("2d");
+      if (ctx) drawStroke(ctx, { ...stroke, points: stroke.points.slice(-2) });
+    }
+
+    function handleRemoteStrokeEnd({ strokeId }: { strokeId: string }) {
+      const stroke = remoteInProgressRef.current.get(strokeId);
+      if (!stroke) return;
+      remoteInProgressRef.current.delete(strokeId);
+      setStrokes((prev) => [...prev, stroke]);
+    }
+
+    socket.on("board-joined", handleBoardJoined);
+    socket.on("stroke-start", handleRemoteStrokeStart);
+    socket.on("stroke-point", handleRemoteStrokePoint);
+    socket.on("stroke-end", handleRemoteStrokeEnd);
+
+    return () => {
+      socket.off("board-joined", handleBoardJoined);
+      socket.off("stroke-start", handleRemoteStrokeStart);
+      socket.off("stroke-point", handleRemoteStrokePoint);
+      socket.off("stroke-end", handleRemoteStrokeEnd);
+      remoteInProgressRef.current.clear();
+    };
+  }, [socket]);
+
   function getPoint(e: { clientX: number; clientY: number }): Point {
     const rect = canvasRef.current!.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -99,6 +152,14 @@ export function useWhiteboard({ userId, tool, color, brushSize }: UseWhiteboardO
     };
     currentStrokeRef.current = stroke;
     drawStroke(ctx, stroke);
+
+    socket?.emit("stroke-start", {
+      strokeId: stroke.id,
+      tool: stroke.tool,
+      color: stroke.color,
+      brushSize: stroke.brushSize,
+      point: stroke.points[0],
+    });
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
@@ -106,8 +167,11 @@ export function useWhiteboard({ userId, tool, color, brushSize }: UseWhiteboardO
     const ctx = canvasRef.current?.getContext("2d");
     if (!stroke || !ctx) return;
 
-    stroke.points.push(getPoint(e));
+    const point = getPoint(e);
+    stroke.points.push(point);
     drawStroke(ctx, { ...stroke, points: stroke.points.slice(-2) });
+
+    socket?.emit("stroke-point", { strokeId: stroke.id, point });
   }
 
   function handlePointerUp() {
@@ -115,6 +179,8 @@ export function useWhiteboard({ userId, tool, color, brushSize }: UseWhiteboardO
     if (!stroke) return;
     currentStrokeRef.current = null;
     setStrokes((prev) => [...prev, stroke]);
+
+    socket?.emit("stroke-end", { strokeId: stroke.id });
   }
 
   return {

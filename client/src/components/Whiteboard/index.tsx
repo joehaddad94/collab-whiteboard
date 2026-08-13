@@ -1,3 +1,4 @@
+import type { Socket } from "socket.io-client";
 import type { Tool } from "../../types";
 import { useWhiteboard } from "./useWhiteboard";
 
@@ -6,11 +7,12 @@ interface WhiteboardProps {
   tool: Tool;
   color: string;
   brushSize: number;
+  socket: Socket | null;
 }
 
-export function Whiteboard({ userId, tool, color, brushSize }: WhiteboardProps) {
+export function Whiteboard({ userId, tool, color, brushSize, socket }: WhiteboardProps) {
   const { containerRef, canvasRef, handlePointerDown, handlePointerMove, handlePointerUp } =
-    useWhiteboard({ userId, tool, color, brushSize });
+    useWhiteboard({ userId, tool, color, brushSize, socket });
 
   return (
     <div ref={containerRef} className="whiteboard-container">
