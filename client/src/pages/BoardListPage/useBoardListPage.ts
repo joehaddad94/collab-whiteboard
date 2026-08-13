@@ -10,6 +10,7 @@ export function useBoardListPage() {
   const [creating, setCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     refreshBoards();
@@ -65,8 +66,18 @@ export function useBoardListPage() {
     }
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm("Delete this board? This can't be undone.")) return;
+  function requestDelete(id: number) {
+    setConfirmDeleteId(id);
+  }
+
+  function cancelDelete() {
+    setConfirmDeleteId(null);
+  }
+
+  async function confirmDelete() {
+    if (confirmDeleteId === null) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       await api.boards.remove(id);
       await refreshBoards();
@@ -89,6 +100,9 @@ export function useBoardListPage() {
     startRename,
     cancelRename,
     handleRename,
-    handleDelete,
+    confirmDeleteId,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
   };
 }

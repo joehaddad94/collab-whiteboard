@@ -31,6 +31,7 @@ export function useBoardPage() {
 
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const {
     socket,
@@ -125,9 +126,17 @@ export function useBoardPage() {
     socket?.emit("redo");
   }
 
-  function clearBoard() {
-    if (!confirm("Clear the whole board? This can't be undone.")) return;
+  function requestClearBoard() {
+    setShowClearConfirm(true);
+  }
+
+  function confirmClearBoard() {
+    setShowClearConfirm(false);
     socket?.emit("clear-board");
+  }
+
+  function cancelClearBoard() {
+    setShowClearConfirm(false);
   }
 
   function updateInviteCode(code: string) {
@@ -166,7 +175,10 @@ export function useBoardPage() {
     setBrushSize,
     undo,
     redo,
-    clearBoard,
+    requestClearBoard,
+    confirmClearBoard,
+    cancelClearBoard,
+    showClearConfirm,
     showInvitePanel,
     setShowInvitePanel,
     updateInviteCode,

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { BoardThumbnail } from "../../components/BoardThumbnail";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useBoardListPage } from "./useBoardListPage";
 
 export function BoardListPage() {
@@ -18,7 +19,10 @@ export function BoardListPage() {
     startRename,
     cancelRename,
     handleRename,
-    handleDelete,
+    confirmDeleteId,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
   } = useBoardListPage();
 
   return (
@@ -91,7 +95,7 @@ export function BoardListPage() {
                         <button
                           type="button"
                           className="btn btn-ghost btn-danger"
-                          onClick={() => handleDelete(board.id)}
+                          onClick={() => requestDelete(board.id)}
                         >
                           Delete
                         </button>
@@ -104,6 +108,17 @@ export function BoardListPage() {
           </ul>
         )}
       </main>
+
+      {confirmDeleteId !== null && (
+        <ConfirmDialog
+          title="Delete this board?"
+          message="This can't be undone."
+          confirmLabel="Delete board"
+          danger
+          onConfirm={() => void confirmDelete()}
+          onCancel={cancelDelete}
+        />
+      )}
     </div>
   );
 }

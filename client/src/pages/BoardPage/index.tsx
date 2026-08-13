@@ -4,6 +4,7 @@ import { CursorOverlay } from "../../components/CursorOverlay";
 import { UserList } from "../../components/UserList";
 import { InvitePanel } from "../../components/InvitePanel";
 import { ChatPanel } from "../../components/ChatPanel";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { BackIcon, ChatIcon } from "../../components/icons";
 import { useBoardPage } from "./useBoardPage";
 
@@ -33,7 +34,10 @@ export function BoardPage() {
     setBrushSize,
     undo,
     redo,
-    clearBoard,
+    requestClearBoard,
+    confirmClearBoard,
+    cancelClearBoard,
+    showClearConfirm,
     showInvitePanel,
     setShowInvitePanel,
     updateInviteCode,
@@ -111,6 +115,17 @@ export function BoardPage() {
         />
       )}
 
+      {showClearConfirm && (
+        <ConfirmDialog
+          title="Clear the whole board?"
+          message="This removes every stroke for everyone on this board. It can't be undone."
+          confirmLabel="Clear board"
+          danger
+          onConfirm={confirmClearBoard}
+          onCancel={cancelClearBoard}
+        />
+      )}
+
       {loadError && <p className="form-error board-page-banner">{loadError}</p>}
       {saveError && <p className="form-error board-page-banner">{saveError}</p>}
       {socketError && (
@@ -143,7 +158,7 @@ export function BoardPage() {
                 onBrushSizeChange={setBrushSize}
                 onUndo={undo}
                 onRedo={redo}
-                onClear={clearBoard}
+                onClear={requestClearBoard}
               />
               <CursorOverlay cursors={cursors} />
             </>
