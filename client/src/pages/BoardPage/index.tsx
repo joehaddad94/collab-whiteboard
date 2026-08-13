@@ -2,7 +2,15 @@ import { Header } from "../../components/Header";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
-  const { board, loadError, connected, connectedUsers, goBack } = useBoardPage();
+  const {
+    board,
+    loadError,
+    connected,
+    connectedUsers,
+    socketError,
+    clearSocketError,
+    goBack,
+  } = useBoardPage();
 
   return (
     <div className="page">
@@ -18,6 +26,14 @@ export function BoardPage() {
       </div>
 
       {loadError && <p className="form-error">{loadError}</p>}
+      {socketError && (
+        <p className="form-error">
+          {socketError}{" "}
+          <button type="button" onClick={clearSocketError}>
+            Dismiss
+          </button>
+        </p>
+      )}
 
       <div className="board-presence">
         {connectedUsers.length === 0 ? (

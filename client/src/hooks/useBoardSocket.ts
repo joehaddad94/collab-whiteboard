@@ -15,6 +15,7 @@ export function useBoardSocket(boardId: number) {
   const [connected, setConnected] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [leaveReason, setLeaveReason] = useState<BoardLeaveReason>(null);
+  const [socketError, setSocketError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!Number.isInteger(boardId)) return;
@@ -22,6 +23,7 @@ export function useBoardSocket(boardId: number) {
     const socket = io(SOCKET_BASE, { withCredentials: true });
     socketRef.current = socket;
     setLeaveReason(null);
+    setSocketError(null);
 
     socket.on("connect", () => {
       setConnected(true);
@@ -30,7 +32,15 @@ export function useBoardSocket(boardId: number) {
 
     socket.on("disconnect", () => setConnected(false));
 
+    // Server uses one generic error event for every rejected action
+    // (bad join, malformed payload, etc.) rather than a bespoke event
+    // per action type (ADR-017).
+    socket.on("error", ({ message }: { message: string }) => {
+      setSocketError(message);
+    });
+
     socket.on("board-joined", (payload: { users: ConnectedUser[] }) => {
+      setSocketError(null);
       setConnectedUsers(payload.users);
     });
 
@@ -52,5 +62,15 @@ export function useBoardSocket(boardId: number) {
     };
   }, [boardId]);
 
-  return { connected, connectedUsers, leaveReason };
+  function clearSocketError() {
+    setSocketError(null);
+  }
+
+  return {
+    connected,
+    connectedUsers,
+    leaveReason,
+    socketError,
+    clearSocketError,
+  };
 }

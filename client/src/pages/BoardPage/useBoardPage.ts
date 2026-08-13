@@ -12,7 +12,8 @@ export function useBoardPage() {
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const { connected, connectedUsers, leaveReason } = useBoardSocket(boardId);
+  const { connected, connectedUsers, leaveReason, socketError, clearSocketError } =
+    useBoardSocket(boardId);
 
   useEffect(() => {
     if (!Number.isInteger(boardId)) {
@@ -47,6 +48,8 @@ export function useBoardPage() {
     loadError,
     connected,
     connectedUsers,
+    socketError,
+    clearSocketError,
     goBack: () => navigate("/boards"),
   };
 }
