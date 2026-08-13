@@ -11,6 +11,9 @@ interface ToolbarProps {
   onColorChange: (color: string) => void;
   brushSize: number;
   onBrushSizeChange: (size: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onClear: () => void;
 }
 
 export function Toolbar({
@@ -20,6 +23,9 @@ export function Toolbar({
   onColorChange,
   brushSize,
   onBrushSizeChange,
+  onUndo,
+  onRedo,
+  onClear,
 }: ToolbarProps) {
   return (
     <div className="toolbar">
@@ -64,6 +70,18 @@ export function Toolbar({
           onChange={(e) => onBrushSizeChange(Number(e.target.value))}
         />
       </label>
+
+      <div className="toolbar-sep" />
+
+      <button type="button" className="tool-btn" onClick={onUndo}>
+        Undo
+      </button>
+      <button type="button" className="tool-btn" onClick={onRedo}>
+        Redo
+      </button>
+      <button type="button" className="tool-btn" onClick={onClear}>
+        Clear
+      </button>
     </div>
   );
 }

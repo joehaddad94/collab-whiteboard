@@ -87,7 +87,9 @@ export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhi
     if (!socket) return;
 
     function handleBoardJoined(payload: { strokes: Stroke[] }) {
+      strokesRef.current = payload.strokes;
       setStrokes(payload.strokes);
+      redrawAll();
     }
 
     function handleRemoteStrokeStart(stroke: Stroke) {
@@ -117,16 +119,48 @@ export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhi
       setStrokes((prev) => [...prev, stroke]);
     }
 
+    // Undo/redo/clear broadcast to the whole room including whoever triggered
+    // them (ADR-017's io.to, not socket.to), so these fire the same way for
+    // every client regardless of who clicked - no local-vs-remote branching
+    // needed here, unlike the stroke-* events above. Removing/restoring a
+    // stroke can't be expressed as an incremental draw, so all three force a
+    // full redraw from the updated state.
+    function handleStrokeRemoved({ strokeId }: { strokeId: string }) {
+      const next = strokesRef.current.filter((s) => s.id !== strokeId);
+      strokesRef.current = next;
+      setStrokes(next);
+      redrawAll();
+    }
+
+    function handleStrokeRestored({ stroke }: { stroke: Stroke }) {
+      const next = [...strokesRef.current, stroke];
+      strokesRef.current = next;
+      setStrokes(next);
+      redrawAll();
+    }
+
+    function handleBoardCleared() {
+      strokesRef.current = [];
+      setStrokes([]);
+      redrawAll();
+    }
+
     socket.on("board-joined", handleBoardJoined);
     socket.on("stroke-start", handleRemoteStrokeStart);
     socket.on("stroke-point", handleRemoteStrokePoint);
     socket.on("stroke-end", handleRemoteStrokeEnd);
+    socket.on("stroke-removed", handleStrokeRemoved);
+    socket.on("stroke-restored", handleStrokeRestored);
+    socket.on("board-cleared", handleBoardCleared);
 
     return () => {
       socket.off("board-joined", handleBoardJoined);
       socket.off("stroke-start", handleRemoteStrokeStart);
       socket.off("stroke-point", handleRemoteStrokePoint);
       socket.off("stroke-end", handleRemoteStrokeEnd);
+      socket.off("stroke-removed", handleStrokeRemoved);
+      socket.off("stroke-restored", handleStrokeRestored);
+      socket.off("board-cleared", handleBoardCleared);
       remoteInProgressRef.current.clear();
     };
   }, [socket]);

@@ -19,6 +19,9 @@ export function BoardPage() {
     setColor,
     brushSize,
     setBrushSize,
+    undo,
+    redo,
+    clearBoard,
   } = useBoardPage();
 
   return (
@@ -75,6 +78,9 @@ export function BoardPage() {
               onColorChange={setColor}
               brushSize={brushSize}
               onBrushSizeChange={setBrushSize}
+              onUndo={undo}
+              onRedo={redo}
+              onClear={clearBoard}
             />
           </>
         )}

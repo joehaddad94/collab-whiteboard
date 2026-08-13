@@ -52,6 +52,19 @@ export function useBoardPage() {
     if (leaveReason) navigate("/boards");
   }, [leaveReason, navigate]);
 
+  function undo() {
+    socket?.emit("undo");
+  }
+
+  function redo() {
+    socket?.emit("redo");
+  }
+
+  function clearBoard() {
+    if (!confirm("Clear the whole board? This can't be undone.")) return;
+    socket?.emit("clear-board");
+  }
+
   return {
     board,
     loadError,
@@ -68,5 +81,8 @@ export function useBoardPage() {
     setColor,
     brushSize,
     setBrushSize,
+    undo,
+    redo,
+    clearBoard,
   };
 }
