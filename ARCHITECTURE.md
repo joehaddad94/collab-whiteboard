@@ -39,18 +39,15 @@ entries are not rewritten after the fact.
 - Nothing outstanding from the original feature set. An automated test suite is the
   one known gap — deliberately deferred by Joe until requirements are otherwise done.
 
-### Frontend — in progress, built independently outside this conversation
-Built directly by Joe in parallel with the backend work above (glimpsed via git log
-while working on backend files, not independently verified end-to-end): Vite + React +
-TypeScript scaffold, router wired up in `App.tsx`, auth context + protected routes,
-login/signup pages (now restructured into a folder + hook convention, e.g.
-`LoginPage/index.tsx` + `useLoginPage.ts`), board list page, a `BoardPage` shell wired
-to a live socket connection, a `useBoardSocket` hook, an app-wide error boundary with
-socket error handling, and a `Whiteboard` component (local drawing only so far — not
-yet wired to the socket drawing events, per its own commit message). Toolbar, user
-list, cursor overlay, chat panel, and the join-by-link page are not confirmed done as
-of this update — check with Joe for current frontend status rather than trusting this
-list blindly.
+### Frontend — done, feature-complete
+Built via a separate Claude Code conversation working task-by-task against this
+backend, each piece tested live against the running server before moving on (see
+ADR-030). Auth (email/`displayName`, matching ADR-022), board list CRUD, `BoardPage`
+with a live socket connection (`useBoardSocket`), `Whiteboard` canvas with full
+real-time drawing sync, `Toolbar`, undo/redo/clear, cursor presence overlay,
+save/load to REST, `UserList` with roles, the invite/join flow (`InvitePanel` +
+`JoinBoardPage`), and `ChatPanel`. Styled against the previously-approved UX mockup.
+An automated test suite is not part of this — same deliberate gap as the backend.
 
 ### Not started at all
 - README (setup, running locally, REST/WebSocket API docs, assumptions, technical
@@ -1008,6 +1005,69 @@ chars, non-string) correctly rejected with a clear `error` event each.
 **Trade-offs:** Same as noted in ADR-020 — no pagination for older messages, no typing
 indicators, no edit/delete. Nothing new introduced here beyond what was already
 accepted.
+
+---
+
+## ADR-030: Frontend implementation — complete, with deviations from ADR-018
+
+**Decision:** Built the full frontend described in ADR-018's plan (routing, canvas
+rendering, invite/join, chat), task-by-task in a separate conversation, each task its
+own commit, tested against this live backend before moving to the next. Three real
+deviations from ADR-018 as originally written:
+
+- **Folder structure extended to a folder + hook convention**, requested mid-build:
+  every page and every component with real logic (state, effects, handlers) is a
+  folder — `index.tsx` (markup only) + `useX.ts` (the logic) — e.g.
+  `pages/BoardPage/index.tsx` + `useBoardPage.ts`. ADR-018 sketched flat files
+  (`BoardPage.tsx`); this is stricter than that, not a contradiction of it. Purely
+  presentational components with no logic of their own (`Toolbar`, `UserList`,
+  `CursorOverlay`) stay single-file — the rule is "split only if there's something to
+  split out." `ErrorBoundary` is the one forced exception: React has no hook
+  equivalent for `getDerivedStateFromError`/`componentDidCatch`, so it has to be a
+  class component regardless of this convention.
+- **`useBoardSocket` does not own `strokes`**, despite ADR-018 listing strokes
+  alongside cursors/connected-users as its state. In practice strokes needed to live
+  in `useWhiteboard` instead, next to the canvas that renders them: cursors/presence/
+  chat are cheap to re-render as React state (a few DOM nodes), but strokes are
+  high-frequency and canvas-imperative by design (ADR-018's own incremental-draw
+  rule) — routing every `stroke-point` through a hook one level away from the canvas
+  would add a layer for no benefit. `useBoardSocket` instead exposes the raw `socket`
+  itself (as state, so it's available by the time a consumer's effect runs), and
+  `useWhiteboard` emits/listens on it directly. Undo/redo/clear stayed thin emit
+  wrappers in `useBoardPage`, since — unlike strokes — the response to those events
+  is a full redraw either way, so there's nothing performance-sensitive being routed
+  through an extra hop.
+- **Auth built against `email`/`displayName`**, not `username` — ADR-018 predates
+  ADR-022. No functional change beyond that; noted here only because ADR-018's prose
+  still says `username` in places.
+
+`JoinBoardPage` also required extending `ProtectedRoute` to preserve the intended
+destination via router location state, and having `Login`/`Signup` redirect back to
+it after auth instead of always landing on `/boards` — an invite link is the main
+case this matters for, since the recipient usually isn't logged in yet, and without
+it the link would silently dead-end at the login screen.
+
+Save (`PUT /api/boards/:id/data`) is manual via a Save button, matching ADR-016's
+"explicit save" design — no autosave. `Whiteboard` exposes an `onStrokesChange`
+callback so `BoardPage` can mirror the current strokes for the Save button to send,
+without lifting canvas ownership out of `useWhiteboard`.
+
+Styling: the design tokens and component styles from the previously-approved UX
+mockup artifact ported into plain CSS custom properties in `index.css` — no styling
+framework or CSS-in-JS, consistent with the project's minimal-dependency philosophy
+applied everywhere else in this stack.
+
+**Verification methodology:** the conversation building the frontend had no browser
+automation available, so each socket-driven feature (presence, drawing sync, undo/
+redo/clear, cursors, chat, invite/join) was verified against this actual running
+server using small throwaway Node scripts with `socket.io-client` that connected as
+real accounts and exercised the exact event sequence the frontend uses, rather than
+relying on code review alone. The two things that couldn't be verified that way:
+actual pointer-driven canvas drawing/resize behavior, and the `ErrorBoundary`'s
+fallback UI actually rendering on a real thrown error — both needed, and got, a
+manual check.
+
+**Trade-offs:** None beyond what's already accepted in ADR-018.
 
 ---
 
