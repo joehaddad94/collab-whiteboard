@@ -26,10 +26,31 @@ function isMember(boardId: number, userId: number): boolean {
   );
 }
 
-// Registers join/leave/disconnect handling for one connected socket (ADR-017/019).
-// Drawing, cursor, undo/redo, and chat events are wired up in later steps.
-export function registerBoardHandlers(_io: Server, socket: Socket) {
+function isValidPoint(point: unknown): point is { x: number; y: number } {
+  return (
+    typeof point === "object" &&
+    point !== null &&
+    typeof (point as { x?: unknown }).x === "number" &&
+    typeof (point as { y?: unknown }).y === "number"
+  );
+}
+
+// Registers join/leave/disconnect handling for one connected socket (ADR-017/019),
+// plus streamed drawing events and clear (ADR-017). Cursor, undo/redo, and chat
+// events are wired up in later steps.
+export function registerBoardHandlers(io: Server, socket: Socket) {
   const user = socket.data.user as { userId: number; username: string };
+
+  // Shared guard for every drawing-related event below: the socket must have
+  // actually joined a board room (and that board must still have a live session)
+  // before any stroke/clear event from it is meaningful.
+  function activeSession(): { boardId: number; roomName: string; session: NonNullable<ReturnType<typeof getSession>> } | null {
+    const boardId = socket.data.currentBoardId as number | undefined;
+    if (boardId === undefined) return null;
+    const session = getSession(boardId);
+    if (!session) return null;
+    return { boardId, roomName: String(boardId), session };
+  }
 
   socket.on("join-board", (payload: { boardId?: unknown }) => {
     const boardId = Number(payload?.boardId);
@@ -74,6 +95,101 @@ export function registerBoardHandlers(_io: Server, socket: Socket) {
     if (boardId !== undefined) {
       leaveBoard(socket, boardId);
     }
+  });
+
+  // Eraser is just a stroke with tool: "eraser" (ADR-006/017) — no separate events.
+  socket.on(
+    "stroke-start",
+    (payload: {
+      strokeId?: unknown;
+      tool?: unknown;
+      color?: unknown;
+      brushSize?: unknown;
+      point?: unknown;
+    }) => {
+      const active = activeSession();
+      if (!active) return;
+
+      const { strokeId, tool, color, brushSize, point } = payload ?? {};
+      if (
+        typeof strokeId !== "string" ||
+        (tool !== "pen" && tool !== "eraser") ||
+        typeof color !== "string" ||
+        typeof brushSize !== "number" ||
+        !isValidPoint(point)
+      ) {
+        return;
+      }
+
+      const stroke: Stroke = {
+        id: strokeId,
+        userId: user.userId,
+        tool,
+        color,
+        brushSize,
+        points: [point],
+      };
+      active.session.inProgressStrokes.set(strokeId, stroke);
+
+      socket.to(active.roomName).emit("stroke-start", stroke);
+    },
+  );
+
+  socket.on(
+    "stroke-point",
+    (payload: { strokeId?: unknown; point?: unknown }) => {
+      const active = activeSession();
+      if (!active) return;
+
+      const { strokeId, point } = payload ?? {};
+      if (typeof strokeId !== "string" || !isValidPoint(point)) return;
+
+      const stroke = active.session.inProgressStrokes.get(strokeId);
+      // Ignore points for a stroke this socket's user didn't start — prevents
+      // one user from appending to another user's in-progress stroke.
+      if (!stroke || stroke.userId !== user.userId) return;
+
+      stroke.points.push(point);
+      socket.to(active.roomName).emit("stroke-point", { strokeId, point });
+    },
+  );
+
+  socket.on("stroke-end", (payload: { strokeId?: unknown }) => {
+    const active = activeSession();
+    if (!active) return;
+
+    const { strokeId } = payload ?? {};
+    if (typeof strokeId !== "string") return;
+
+    const stroke = active.session.inProgressStrokes.get(strokeId);
+    if (!stroke || stroke.userId !== user.userId) return;
+
+    active.session.inProgressStrokes.delete(strokeId);
+    active.session.strokes.push(stroke);
+
+    const undoStack = active.session.undoStack.get(user.userId) ?? [];
+    undoStack.push(stroke);
+    active.session.undoStack.set(user.userId, undoStack);
+    // A new completed stroke invalidates this user's old redo history.
+    active.session.redoStack.set(user.userId, []);
+
+    socket.to(active.roomName).emit("stroke-end", { strokeId });
+  });
+
+  // Clear is not undoable (ADR-017/007) — resets strokes and every user's
+  // undo/redo stacks. Broadcast to the whole room including the sender (unlike
+  // drawing events), so there's one authoritative "board is now empty" moment
+  // rather than the clearer assuming their own local clear matches the server.
+  socket.on("clear-board", () => {
+    const active = activeSession();
+    if (!active) return;
+
+    active.session.strokes = [];
+    active.session.inProgressStrokes.clear();
+    active.session.undoStack.clear();
+    active.session.redoStack.clear();
+
+    io.to(active.roomName).emit("board-cleared");
   });
 }
 

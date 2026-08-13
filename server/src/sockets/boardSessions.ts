@@ -18,6 +18,11 @@ export interface ConnectedUser {
 
 export interface BoardSession {
   strokes: Stroke[];
+  // Strokes currently being drawn (between stroke-start and stroke-end), keyed by
+  // strokeId. stroke-end's payload is just { strokeId } (ADR-017), so the server
+  // must accumulate the points itself from stroke-start/stroke-point to know what
+  // to move into `strokes` once the stroke finishes.
+  inProgressStrokes: Map<string, Stroke>;
   // Keyed by userId — undo/redo is per-user (ADR-007), not global.
   undoStack: Map<number, Stroke[]>;
   redoStack: Map<number, Stroke[]>;
@@ -40,6 +45,7 @@ export function getOrCreateSession(
   if (!session) {
     session = {
       strokes: hydrate(),
+      inProgressStrokes: new Map(),
       undoStack: new Map(),
       redoStack: new Map(),
       connectedUsers: new Map(),
