@@ -897,6 +897,29 @@ corrupt `board-joined`'s `strokes` payload for every future viewer of that board
 
 ---
 
+## ADR-026: Clean up abandoned in-progress strokes on leave/disconnect
+
+**Decision:** `sockets/board.ts`'s `leaveBoard()` now also removes any
+`session.inProgressStrokes` entries whose `stroke.userId` matches the departing user,
+alongside the existing `connectedUsers` cleanup.
+
+**Context:** Found during the backend audit: if a user disconnects (network drop, tab
+close, mobile backgrounding) after `stroke-start` but before `stroke-end`, the
+abandoned entry was never removed — it would sit in memory for as long as the board
+session stayed alive (i.e. as long as anyone else was connected), an unbounded leak on
+a busy, long-running board.
+
+**Verification note:** proved this live, not just by reading the code — since another
+process can't inspect this server's in-memory state, temporarily added a debug log
+printing the map size before/after cleanup, ran an isolated temp server instance
+(separate port/DB, to avoid touching the actual dev server), confirmed the count went
+from 1 to 0 after a disconnect mid-stroke, then removed the debug log before
+committing.
+
+**Trade-offs:** None — closes a real leak, no design ambiguity.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

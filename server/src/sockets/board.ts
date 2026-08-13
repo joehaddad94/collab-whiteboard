@@ -229,6 +229,13 @@ function leaveBoard(socket: Socket, boardId: number) {
   const session = getSession(boardId);
 
   session?.connectedUsers.delete(socket.id);
+  if (session) {
+    for (const [strokeId, stroke] of session.inProgressStrokes) {
+      if (stroke.userId === user.userId) {
+        session.inProgressStrokes.delete(strokeId);
+      }
+    }
+  }
   socket.leave(roomName);
   if (socket.data.currentBoardId === boardId) {
     socket.data.currentBoardId = undefined;
