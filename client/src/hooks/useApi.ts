@@ -1,6 +1,7 @@
 import type {
   ApiError,
   BoardDetail,
+  BoardMember,
   BoardSummary,
   Stroke,
   User,
@@ -93,6 +94,7 @@ export const api = {
         method: "PUT",
         body: JSON.stringify({ data }),
       }),
+    listMembers: (id: number) => request<BoardMember[]>(`/api/boards/${id}/members`),
   },
 };
 

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
 import { useAuth } from "../../hooks/useAuth";
 import { api, ApiRequestError } from "../../hooks/useApi";
-import type { BoardDetail, Stroke, Tool } from "../../types";
+import type { BoardDetail, BoardMember, Stroke, Tool } from "../../types";
 
 const DEFAULT_COLOR = "#1b1d22";
 const DEFAULT_BRUSH_SIZE = 4;
@@ -18,6 +18,7 @@ export function useBoardPage() {
 
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [members, setMembers] = useState<BoardMember[]>([]);
 
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState(DEFAULT_COLOR);
@@ -56,6 +57,22 @@ export function useBoardPage() {
             err instanceof ApiRequestError ? err.message : "Failed to load board",
           );
         }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
+
+  useEffect(() => {
+    if (!Number.isInteger(boardId)) return;
+    let cancelled = false;
+    api.boards
+      .listMembers(boardId)
+      .then((list) => {
+        if (!cancelled) setMembers(list);
+      })
+      .catch(() => {
+        // Non-critical: role badges just won't show if this fails.
       });
     return () => {
       cancelled = true;
@@ -108,12 +125,19 @@ export function useBoardPage() {
     socket?.emit("clear-board");
   }
 
+  const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
+  const onlineMembers = connectedUsers.map((u) => ({
+    ...u,
+    role: roleByUserId.get(u.userId),
+  }));
+
   return {
     board,
     loadError,
     socket,
     connected,
     connectedUsers,
+    onlineMembers,
     cursors,
     socketError,
     clearSocketError,

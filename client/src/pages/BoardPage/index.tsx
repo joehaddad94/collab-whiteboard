@@ -1,6 +1,7 @@
 import { Whiteboard } from "../../components/Whiteboard";
 import { Toolbar } from "../../components/Toolbar";
 import { CursorOverlay } from "../../components/CursorOverlay";
+import { UserList } from "../../components/UserList";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -9,7 +10,7 @@ export function BoardPage() {
     loadError,
     socket,
     connected,
-    connectedUsers,
+    onlineMembers,
     cursors,
     socketError,
     clearSocketError,
@@ -55,15 +56,7 @@ export function BoardPage() {
         </div>
 
         <div className="board-presence">
-          {connectedUsers.length === 0 ? (
-            <span className="board-presence-empty">No one else here yet</span>
-          ) : (
-            connectedUsers.map((u) => (
-              <span key={u.userId} className="presence-chip">
-                {u.displayName}
-              </span>
-            ))
-          )}
+          <UserList members={onlineMembers} />
           <button
             type="button"
             className="btn btn-primary"

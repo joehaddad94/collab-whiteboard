@@ -54,3 +54,9 @@ export interface CursorPosition {
   x: number;
   y: number;
 }
+
+export interface BoardMember {
+  userId: number;
+  displayName: string;
+  role: BoardRole;
+}

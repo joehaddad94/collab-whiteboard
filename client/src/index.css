@@ -442,6 +442,9 @@ a {
   color: var(--ink-400);
 }
 .presence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 10px;
@@ -449,6 +452,14 @@ a {
   background: var(--accent-soft);
   color: var(--accent);
   border: 1px solid var(--accent-soft-border);
+}
+.presence-chip-role {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  opacity: 0.75;
 }
 .board-page-banner {
   margin: 12px 16px 0;
