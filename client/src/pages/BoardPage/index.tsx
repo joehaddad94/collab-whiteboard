@@ -13,6 +13,10 @@ export function BoardPage() {
     cursors,
     socketError,
     clearSocketError,
+    saveStatus,
+    saveError,
+    save,
+    handleStrokesChange,
     userId,
     goBack,
     tool,
@@ -38,6 +42,16 @@ export function BoardPage() {
             <span className={`dot ${connected ? "dot-success" : "dot-pending"}`} />
             {connected ? "Connected" : "Connecting…"}
           </span>
+          <span className="save-status">
+            <span
+              className={`dot ${saveStatus === "unsaved" ? "dot-pending" : "dot-success"}`}
+            />
+            {saveStatus === "saving"
+              ? "Saving…"
+              : saveStatus === "unsaved"
+                ? "Unsaved changes"
+                : "Saved"}
+          </span>
         </div>
 
         <div className="board-presence">
@@ -50,10 +64,19 @@ export function BoardPage() {
               </span>
             ))
           )}
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void save()}
+            disabled={saveStatus === "saving"}
+          >
+            {saveStatus === "saving" ? "Saving…" : "Save"}
+          </button>
         </div>
       </div>
 
       {loadError && <p className="form-error board-page-banner">{loadError}</p>}
+      {saveError && <p className="form-error board-page-banner">{saveError}</p>}
       {socketError && (
         <p className="form-error board-page-banner">
           {socketError}{" "}
@@ -72,6 +95,7 @@ export function BoardPage() {
               color={color}
               brushSize={brushSize}
               socket={socket}
+              onStrokesChange={handleStrokesChange}
             />
             <Toolbar
               tool={tool}

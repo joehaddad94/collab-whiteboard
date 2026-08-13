@@ -410,7 +410,8 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.connection-status {
+.connection-status,
+.save-status {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -418,15 +419,16 @@ a {
   color: var(--ink-400);
   white-space: nowrap;
 }
-.connection-status .dot {
+.connection-status .dot,
+.save-status .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
-.connection-status .dot-success {
+.dot-success {
   background: var(--success);
 }
-.connection-status .dot-pending {
+.dot-pending {
   background: var(--ink-400);
 }
 .board-presence {

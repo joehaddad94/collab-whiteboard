@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
 import { useAuth } from "../../hooks/useAuth";
 import { api, ApiRequestError } from "../../hooks/useApi";
-import type { BoardDetail, Tool } from "../../types";
+import type { BoardDetail, Stroke, Tool } from "../../types";
 
 const DEFAULT_COLOR = "#1b1d22";
 const DEFAULT_BRUSH_SIZE = 4;
+
+export type SaveStatus = "saved" | "unsaved" | "saving";
 
 export function useBoardPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +22,11 @@ export function useBoardPage() {
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
+
+  const boardStrokesRef = useRef<Stroke[]>([]);
+  const hasHydratedRef = useRef(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const {
     socket,
@@ -59,6 +66,35 @@ export function useBoardPage() {
     if (leaveReason) navigate("/boards");
   }, [leaveReason, navigate]);
 
+  useEffect(() => {
+    hasHydratedRef.current = false;
+    setSaveStatus("saved");
+  }, [boardId]);
+
+  function handleStrokesChange(strokes: Stroke[]) {
+    boardStrokesRef.current = strokes;
+    // The first strokes-change per board is the initial board-joined hydrate,
+    // not a real edit - only mark unsaved for changes after that.
+    if (!hasHydratedRef.current) {
+      hasHydratedRef.current = true;
+      return;
+    }
+    setSaveStatus("unsaved");
+  }
+
+  async function save() {
+    if (!Number.isInteger(boardId)) return;
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      await api.boards.saveData(boardId, boardStrokesRef.current);
+      setSaveStatus("saved");
+    } catch (err) {
+      setSaveStatus("unsaved");
+      setSaveError(err instanceof ApiRequestError ? err.message : "Failed to save");
+    }
+  }
+
   function undo() {
     socket?.emit("undo");
   }
@@ -81,6 +117,10 @@ export function useBoardPage() {
     cursors,
     socketError,
     clearSocketError,
+    saveStatus,
+    saveError,
+    save,
+    handleStrokesChange,
     userId: user?.id ?? null,
     goBack: () => navigate("/boards"),
     tool,

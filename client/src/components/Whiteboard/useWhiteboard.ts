@@ -8,6 +8,7 @@ interface UseWhiteboardOptions {
   color: string;
   brushSize: number;
   socket: Socket | null;
+  onStrokesChange?: (strokes: Stroke[]) => void;
 }
 
 const CURSOR_THROTTLE_MS = 40;
@@ -38,7 +39,14 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 // canvas as points arrive, and only committed to `strokes` React state once
 // finished, since that state exists for full redraws (resize now; undo/redo/
 // initial-load sync), not for driving the live drawing itself.
-export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhiteboardOptions) {
+export function useWhiteboard({
+  userId,
+  tool,
+  color,
+  brushSize,
+  socket,
+  onStrokesChange,
+}: UseWhiteboardOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentStrokeRef = useRef<Stroke | null>(null);
@@ -50,6 +58,11 @@ export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhi
 
   useEffect(() => {
     strokesRef.current = strokes;
+    onStrokesChange?.(strokes);
+    // onStrokesChange intentionally excluded: BoardPage doesn't memoize it,
+    // and re-running this on every strokes change (not every parent render)
+    // is exactly the behavior wanted here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strokes]);
 
   function redrawAll() {
