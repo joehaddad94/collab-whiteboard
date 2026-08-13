@@ -45,10 +45,12 @@ while working on backend files, not independently verified end-to-end): Vite + R
 TypeScript scaffold, router wired up in `App.tsx`, auth context + protected routes,
 login/signup pages (now restructured into a folder + hook convention, e.g.
 `LoginPage/index.tsx` + `useLoginPage.ts`), board list page, a `BoardPage` shell wired
-to a live socket connection, a `useBoardSocket` hook, and an app-wide error boundary
-with socket error handling. Canvas rendering, toolbar, user list, cursor overlay, chat
-panel, and the join-by-link page are not confirmed done as of this update — check with
-Joe for current frontend status rather than trusting this list blindly.
+to a live socket connection, a `useBoardSocket` hook, an app-wide error boundary with
+socket error handling, and a `Whiteboard` component (local drawing only so far — not
+yet wired to the socket drawing events, per its own commit message). Toolbar, user
+list, cursor overlay, chat panel, and the join-by-link page are not confirmed done as
+of this update — check with Joe for current frontend status rather than trusting this
+list blindly.
 
 ### Not started at all
 - README (setup, running locally, REST/WebSocket API docs, assumptions, technical
