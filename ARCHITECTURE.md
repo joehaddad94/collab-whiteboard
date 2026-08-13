@@ -821,6 +821,47 @@ test data existed.
 
 ---
 
+## ADR-023: Evict live sockets on membership revoke / board delete
+
+**Decision:** A REST-triggered mutation that should immediately cut off real-time
+access — removing a board member, deleting a board — now does so. New module
+`sockets/realtime.ts` holds a module-level `io` reference (set once at startup via
+`setIo(io)` in `src/index.ts`, same singleton-module pattern as `db/index.ts` — no DI
+container, consistent with the rest of the codebase):
+- `evictUserFromBoard(boardId, userId)` — finds that user's connected socket(s) in the
+  board's session, removes them from `connectedUsers`, forces `socket.leave()`, clears
+  `socket.data.currentBoardId`, emits a new `removed-from-board { boardId }` event
+  directly to them, and broadcasts `user-left` to the rest of the room.
+- `evictAllFromBoard(boardId)` — same idea for every connected socket when the board
+  itself is deleted, emitting a new `board-deleted { boardId }` event to each.
+
+`modules/boards/boards.controller.ts`'s `removeMember` and `remove` call these
+**after** the underlying service call succeeds. The controller does this, not the
+service — `boards.service.ts` stays free of any Socket.io dependency; the controller is
+the natural place for it since it already sits at the boundary between an HTTP request
+and side effects outside the database.
+
+**Context:** Found during a full backend audit: before this, revoking someone's board
+access or deleting a board only touched the DB — a socket already connected to that
+board's session kept full drawing/undo/clear access indefinitely, since the socket
+layer only checked membership once, at `join-board` time, never again afterward.
+
+**Alternatives considered:**
+- **Service-layer eviction** (have `boards.service.ts` call into the socket layer
+  directly) — rejected: would make core business logic depend on Socket.io, and break
+  the existing one-directional dependency (sockets depend on the boards service, not
+  the reverse).
+- **Polling/periodic re-validation** of membership from connected sockets — rejected as
+  needless complexity when the exact moment membership changes is already known (the
+  REST call that changed it); push-based eviction is simpler and instant.
+
+**Trade-offs:** Adds two new events to the socket contract (`removed-from-board`,
+`board-deleted`) that the frontend will eventually need to handle (redirect away from
+the board view) — not built yet, noted as a known gap in the contract, not an
+oversight.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

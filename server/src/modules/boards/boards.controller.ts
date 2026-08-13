@@ -2,6 +2,7 @@ import type { Response } from "express";
 import type { AuthenticatedRequest } from "../../middleware/auth.js";
 import { NotFoundError } from "../../errors.js";
 import * as boardsService from "./boards.service.js";
+import { evictAllFromBoard, evictUserFromBoard } from "../../sockets/realtime.js";
 
 function parseId(raw: string | string[] | undefined): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -43,6 +44,7 @@ export function rename(req: AuthenticatedRequest, res: Response) {
 export function remove(req: AuthenticatedRequest, res: Response) {
   const boardId = parseId(req.params.id);
   boardsService.deleteBoardForOwner(boardId, req.user!.userId);
+  evictAllFromBoard(boardId);
   res.status(204).send();
 }
 
@@ -75,6 +77,7 @@ export function removeMember(req: AuthenticatedRequest, res: Response) {
   const boardId = parseId(req.params.id);
   const targetUserId = parseId(req.params.userId);
   boardsService.removeMember(boardId, req.user!.userId, targetUserId);
+  evictUserFromBoard(boardId, targetUserId);
   res.status(204).send();
 }
 

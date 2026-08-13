@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { createApp } from "./app.js";
 import { verifyToken } from "./middleware/auth.js";
 import { registerBoardHandlers } from "./sockets/board.js";
+import { setIo } from "./sockets/realtime.js";
 import "./db/index.js";
 
 const app = createApp();
@@ -17,6 +18,8 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
+
+setIo(io);
 
 io.engine.use(cookieParser());
 
