@@ -17,35 +17,38 @@ entries are not rewritten after the fact.
 
 ## Status (updated 2026-08-13)
 
-### Backend — done
+### Backend — done, feature-complete
 - Project skeleton: TypeScript, `node:sqlite`, `db/schema.sql`, `.env`/`.env.example` (ADR-011–014)
-- Auth: signup/login/logout/me, JWT httpOnly cookie, auth middleware, Socket.io handshake auth (ADR-008/015)
+- Auth: signup/login/logout/me, email + `displayName` (not username), JWT httpOnly
+  cookie, auth middleware, Socket.io handshake auth, async bcrypt (ADR-008/015/022/027)
 - Board CRUD REST routes: list/create/get/rename/delete/save (ADR-016)
-- Membership REST routes: list/invite-by-username/remove, invite-link regenerate/join (ADR-009/016)
-- Socket.io: `join-board`/`leave-board` + presence, streamed drawing events
-  (`stroke-start`/`stroke-point`/`stroke-end`), `clear-board`, per-user `undo`/`redo`,
-  `cursor-move` → `cursor-update` (ADR-017/019)
-- Backend refactored into feature-grouped modules (repository/service/controller/routes)
-  with centralized error handling and no code comments (ADR-021)
+- Membership REST routes: list/invite-by-email/remove, invite-link regenerate/join
+  (ADR-009/016/022)
+- Socket.io — full contract: `join-board`/`leave-board` + presence, streamed drawing
+  events (`stroke-start`/`stroke-point`/`stroke-end`), `clear-board`, per-user
+  `undo`/`redo`, `cursor-move` → `cursor-update`, and `chat-message` with history
+  delivered on join (ADR-017/019/020)
+- Live sockets evicted on membership revoke / board delete (ADR-023)
+- Feature-grouped module refactor (repository/service/controller/routes), centralized
+  error handling, no code comments (ADR-021)
+- Backend audit fixes: cross-board room-switch cleanup, stroke shape validation on
+  save, abandoned in-progress-stroke leak fixed, minor query/error-message cleanups
+  (ADR-024, 025, 026, 028)
 
 ### Backend — not done
-- Chat (`ChatMessage` persistence + `chat-message` event + history in `board-joined`) —
-  **deliberately deferred to last**, per ADR-020. This is now the only remaining
-  backend work.
+- Nothing outstanding from the original feature set. An automated test suite is the
+  one known gap — deliberately deferred by Joe until requirements are otherwise done.
 
-### Frontend — done (built independently, outside this conversation)
-- Vite + React + TypeScript scaffold
-- Auth context + protected route guard
-- Login/signup pages
-- Board list page (create/rename/delete)
-
-### Frontend — not done
-- `BoardPage` (hosts the canvas + toolbar + user list + chat)
-- `Whiteboard` component — canvas rendering, hybrid incremental/full-redraw strategy (ADR-018)
-- `Toolbar`, `UserList`, `CursorOverlay`, `ChatPanel`
-- `useBoardSocket` hook — wraps the socket connection and join/leave lifecycle, exposes
-  draw/undo/redo/chat actions
-- `JoinBoardPage` (redeems `/join/:code`)
+### Frontend — in progress, built independently outside this conversation
+Built directly by Joe in parallel with the backend work above (glimpsed via git log
+while working on backend files, not independently verified end-to-end): Vite + React +
+TypeScript scaffold, router wired up in `App.tsx`, auth context + protected routes,
+login/signup pages (now restructured into a folder + hook convention, e.g.
+`LoginPage/index.tsx` + `useLoginPage.ts`), board list page, a `BoardPage` shell wired
+to a live socket connection, a `useBoardSocket` hook, and an app-wide error boundary
+with socket error handling. Canvas rendering, toolbar, user list, cursor overlay, chat
+panel, and the join-by-link page are not confirmed done as of this update — check with
+Joe for current frontend status rather than trusting this list blindly.
 
 ### Not started at all
 - README (setup, running locally, REST/WebSocket API docs, assumptions, technical
@@ -959,6 +962,50 @@ happy path, just unnecessary I/O and a misleading error message on a malformed
 request.
 
 **Trade-offs:** None.
+
+---
+
+## ADR-029: Chat implemented
+
+**Decision:** Built exactly per ADR-020's design, with two adjustments made along the
+way:
+- Broadcast/history payloads carry `displayName` (via a `User` join in
+  `chat.repository.ts`), not `username` — ADR-020 predates the email/`displayName`
+  migration (ADR-022); this just keeps chat consistent with every other presence-facing
+  payload.
+- **Validation failures emit an `error` event back to the sender** (reusing the same
+  generic `error { message }` channel `join-board` uses for authorization failures),
+  rather than silently dropping the message the way malformed drawing events do.
+  Reasoning: a drawing-event validation failure only ever comes from a buggy/malicious
+  client sending malformed data a real UI would never produce; a chat validation
+  failure (empty text, over the length cap) is something a normal user can trigger by
+  typing, so it deserves feedback rather than a silently swallowed message.
+
+New module `modules/chat/`: `chat.repository.ts` (raw SQL against the `ChatMessage`
+table, which has existed in `schema.sql` since the original scaffolding but was unused
+until now) and `chat.service.ts` (`sendMessage` — validates length 1-2000 chars after
+trimming, inserts, returns the message joined with the sender's `displayName`;
+`getRecentMessages` — last 50, returned in chronological order). Wired into
+`sockets/board.ts`: `board-joined` gained a `messages` field, and a new `chat-message`
+handler validates via the service then broadcasts to the whole room including the
+sender (like `clear-board`/`undo`/`redo` — an authoritative, server-confirmed
+action, not something the sender should render optimistically before the server
+confirms it, avoiding any duplicate-message reconciliation).
+
+Chat history is **not** cached in the in-memory board session the way strokes are —
+each message is already persisted to SQLite the moment it's sent, so `getRecentMessages`
+is just a small indexed query run fresh on each join, with no need for the kind of
+live in-memory cache strokes need (which exists specifically because strokes are
+*not* persisted per-event, per ADR-003).
+
+**Verification:** tested live end-to-end — history delivered correctly and in
+chronological order on join, messages broadcast to every participant including the
+sender, and all three validation failure modes (empty/whitespace-only, over 2000
+chars, non-string) correctly rejected with a clear `error` event each.
+
+**Trade-offs:** Same as noted in ADR-020 — no pagination for older messages, no typing
+indicators, no edit/delete. Nothing new introduced here beyond what was already
+accepted.
 
 ---
 

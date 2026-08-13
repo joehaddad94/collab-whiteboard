@@ -1,5 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import * as boardsService from "../modules/boards/boards.service.js";
+import * as chatService from "../modules/chat/chat.service.js";
 import {
   getSession,
   getOrCreateSession,
@@ -61,6 +62,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     socket.emit("board-joined", {
       strokes: session.strokes,
       users: Array.from(session.connectedUsers.values()),
+      messages: chatService.getRecentMessages(boardId),
     });
 
     socket.to(roomName).emit("user-joined", {
@@ -220,6 +222,24 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       x,
       y,
     });
+  });
+
+  socket.on("chat-message", (payload: { text?: unknown }) => {
+    const active = activeSession();
+    if (!active) return;
+
+    try {
+      const message = chatService.sendMessage(
+        active.boardId,
+        user.userId,
+        payload?.text,
+      );
+      io.to(active.roomName).emit("chat-message", message);
+    } catch (err) {
+      socket.emit("error", {
+        message: err instanceof Error ? err.message : "Failed to send message",
+      });
+    }
   });
 }
 
