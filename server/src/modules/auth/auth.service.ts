@@ -55,11 +55,11 @@ function validateDisplayName(displayName: unknown): string {
   return trimmed;
 }
 
-export function signup(
+export async function signup(
   rawEmail: unknown,
   rawPassword: unknown,
   rawDisplayName: unknown,
-): AuthResult {
+): Promise<AuthResult> {
   const email = validateEmail(rawEmail);
   const password = validatePassword(rawPassword);
   const displayName = validateDisplayName(rawDisplayName);
@@ -68,20 +68,23 @@ export function signup(
     throw new ConflictError("An account with this email already exists");
   }
 
-  const passwordHash = bcrypt.hashSync(password, 10);
+  const passwordHash = await bcrypt.hash(password, 10);
   const id = insertUser(email, passwordHash, displayName);
   const token = signToken({ userId: id, displayName });
 
   return { id, email, displayName, token };
 }
 
-export function login(rawEmail: unknown, rawPassword: unknown): AuthResult {
+export async function login(
+  rawEmail: unknown,
+  rawPassword: unknown,
+): Promise<AuthResult> {
   if (typeof rawEmail !== "string" || typeof rawPassword !== "string") {
     throw new UnauthorizedError("Invalid credentials");
   }
 
   const user = findUserByEmail(rawEmail.toLowerCase());
-  if (!user || !bcrypt.compareSync(rawPassword, user.password_hash)) {
+  if (!user || !(await bcrypt.compare(rawPassword, user.password_hash))) {
     throw new UnauthorizedError("Invalid credentials");
   }
 

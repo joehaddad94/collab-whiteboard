@@ -920,6 +920,29 @@ committing.
 
 ---
 
+## ADR-027: Switch bcrypt to async
+
+**Decision:** `auth.service.ts`'s `signup`/`login` now use `await bcrypt.hash`/
+`await bcrypt.compare` instead of `hashSync`/`compareSync`, and are themselves
+`async`; `auth.controller.ts`'s `signup`/`login` handlers are `async` and `await` them
+(Express 5 auto-catches rejected promises from async handlers, so no other wiring
+changed).
+
+**Context:** Found during the backend audit: `bcrypt.hashSync`/`compareSync` run
+synchronously and block Node's single event loop for the full hash duration. Since
+Socket.io shares that same loop, a signup/login request could visibly stall real-time
+stroke/cursor broadcasts for every other actively-drawing user on any board while the
+hash was computing — a concern specific to this being a real-time app, not something
+that would matter in a typical request/response-only CRUD service.
+
+**Trade-offs:** None functionally — verified the full auth flow (signup, me, login,
+wrong password, unknown email, duplicate signup) behaves identically. The actual
+concurrency improvement itself (async work no longer blocks the event loop) is an
+established property of the sync→async switch, not something separately
+re-benchmarked with a timing test here.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

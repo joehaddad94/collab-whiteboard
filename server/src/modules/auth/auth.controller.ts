@@ -9,8 +9,8 @@ const COOKIE_OPTIONS = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-export function signup(req: AuthenticatedRequest, res: Response) {
-  const result = authService.signup(
+export async function signup(req: AuthenticatedRequest, res: Response) {
+  const result = await authService.signup(
     req.body?.email,
     req.body?.password,
     req.body?.displayName,
@@ -21,8 +21,8 @@ export function signup(req: AuthenticatedRequest, res: Response) {
     .json({ id: result.id, email: result.email, displayName: result.displayName });
 }
 
-export function login(req: AuthenticatedRequest, res: Response) {
-  const result = authService.login(req.body?.email, req.body?.password);
+export async function login(req: AuthenticatedRequest, res: Response) {
+  const result = await authService.login(req.body?.email, req.body?.password);
   res.cookie("token", result.token, COOKIE_OPTIONS);
   res.json({ id: result.id, email: result.email, displayName: result.displayName });
 }
