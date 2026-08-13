@@ -2,7 +2,7 @@ import type { Stroke } from "../modules/boards/boards.types.js";
 
 export interface ConnectedUser {
   userId: number;
-  username: string;
+  displayName: string;
 }
 
 export interface BoardSession {

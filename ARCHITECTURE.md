@@ -23,13 +23,15 @@ entries are not rewritten after the fact.
 - Board CRUD REST routes: list/create/get/rename/delete/save (ADR-016)
 - Membership REST routes: list/invite-by-username/remove, invite-link regenerate/join (ADR-009/016)
 - Socket.io: `join-board`/`leave-board` + presence, streamed drawing events
-  (`stroke-start`/`stroke-point`/`stroke-end`), `clear-board`, per-user `undo`/`redo`
-  (ADR-017/019)
+  (`stroke-start`/`stroke-point`/`stroke-end`), `clear-board`, per-user `undo`/`redo`,
+  `cursor-move` → `cursor-update` (ADR-017/019)
+- Backend refactored into feature-grouped modules (repository/service/controller/routes)
+  with centralized error handling and no code comments (ADR-021)
 
 ### Backend — not done
 - Chat (`ChatMessage` persistence + `chat-message` event + history in `board-joined`) —
-  **deliberately deferred to last**, per ADR-020
-- `cursor-move` → `cursor-update` presence events (ADR-017) — not yet implemented
+  **deliberately deferred to last**, per ADR-020. This is now the only remaining
+  backend work.
 
 ### Frontend — done (built independently, outside this conversation)
 - Vite + React + TypeScript scaffold
@@ -716,6 +718,106 @@ pass.
 **Trade-offs:** No older-message pagination means very long-lived boards only show
 recent chat history in-app (though everything is still stored in `ChatMessage` and
 could be exposed later); acceptable for this scope.
+
+---
+
+## ADR-021: Backend refactor — feature-grouped layering, no code comments
+
+**Decision:**
+- Replaced the flat `routes/auth.ts` / `routes/boards.ts` files with feature-grouped
+  modules: `modules/{auth,boards}/`, each split into
+  `*.repository.ts` (raw SQL only) → `*.service.ts` (business logic, throws typed
+  errors) → `*.controller.ts` (thin — parses the request, calls the service, shapes
+  the response) → `*.routes.ts` (path/method wiring only).
+- Added `errors.ts` — `AppError` and typed subclasses (`ValidationError`,
+  `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ConflictError`), each
+  carrying an HTTP status. `app.ts` now has one centralized error-handling middleware
+  that maps any thrown `AppError` to its response, replacing the repeated
+  `res.status(...).json({error...})` that used to appear in every handler.
+- `sockets/board.ts` now calls `boardsService.isMember()` /
+  `boardsService.getBoardStrokes()` instead of reimplementing them locally — this
+  removes real duplication that existed between the REST and socket layers (the same
+  membership-check logic was previously written twice).
+- Removed every code comment from the backend. The reasoning they contained already
+  lives in this file; keeping it in two places was pure duplication, not two
+  different audiences.
+
+**Context:** `routes/boards.ts` had grown to mix three concerns in every handler —
+HTTP parsing, business rules (ownership/membership checks), and raw SQL — and,
+concretely, `isMember()` and the strokes-hydration logic were duplicated between
+`routes/boards.ts` and `sockets/board.ts` because there was no shared layer either
+could call into. Requested explicitly after the fact, once the codebase had grown
+enough for the problem to be visible.
+
+**Alternatives considered:**
+- **Layer-grouped folders** (top-level `routes/`, `controllers/`, `services/`,
+  `repositories/`, one file per feature in each) — the more classic MVC layout;
+  rejected in favor of feature-grouped, which keeps everything about one feature in
+  one folder as the project's feature count grows.
+
+**Trade-offs:** More files and more indirection to trace through than the original
+flat routes — a real cost, weighed against removing actual duplication and giving the
+404-vs-403 convention (ADR-016) one enforced home instead of trusting every handler to
+replicate it correctly by hand. This adds more internal structure than ADR-001's
+"minimal, avoid unnecessary abstraction" reasoning might suggest — worth being ready
+to explain that distinction: ADR-001 was about avoiding a *framework's* baked-in
+DI/decorator machinery (Nest), not about avoiding basic separation of concerns within
+plain Express, which is what this still is.
+
+**Caught along the way:** running `tsc --noEmit` — for the first time this session, having
+relied on `tsx` (which does not type-check) throughout — surfaced 15 real type errors
+that had been silently present in the codebase already, not introduced by this
+refactor. All fixed as part of this change. Also re-ran the full regression suite
+(auth, board CRUD, membership/invite, all socket events) live afterward; every
+behavior confirmed identical to before the refactor.
+
+---
+
+## ADR-022: Auth identifier — email instead of username, separate `displayName`
+
+**Decision:** Login/signup now key off `email` (unique, normalized to lowercase at the
+service boundary before storage/lookup/comparison), not `username`. A separate
+`displayName` field (not unique, no character restriction, 1-50 chars) is what's shown
+to other users — connected-users list, `user-joined`/`cursor-update` presence events,
+board membership lists, chat (later). **Email is deliberately excluded from the JWT
+payload** (`AuthTokenPayload` is now `{ userId, displayName }`) — the token drives
+real-time presence broadcasts, and a private credential like email shouldn't be
+embedded in something that flows into those broadcasts. `GET /api/auth/me` does a real
+DB lookup (`authService.getProfile`) rather than trusting the JWT payload directly,
+specifically so it can return email (private, own-profile-only) alongside
+`displayName`, keeping signup/login/me all returning the same `User` shape.
+
+Board invites (ADR-009) now take an email, not a username — `findUserByEmail` instead
+of `findUserByUsername`; member-list/invite responses carry `displayName`, never email.
+
+**Context:** Raised directly: is email a better identifier than username? Concluded
+yes for realism/defensibility in review, but only if paired with a separate display
+name — otherwise other users' emails would be broadcast in real time to anyone sharing
+a board, which is a privacy smell. This also closes out a bug found during the backend
+audit: username matching was case-sensitive (`findUserByUsername` did an exact SQL
+match), causing both duplicate-looking accounts (`Alice` vs `alice`) and failed invites
+from a case mismatch. Normalizing email to lowercase at signup/login/invite time
+resolves this the same way real systems do, without a separate fix.
+
+**Alternatives considered:**
+- **Email as the sole identifier, no separate display name** — rejected: would mean
+  showing a stranger's raw email in the UI next to their cursor/drawing, which most
+  comparable apps avoid.
+- **Case-insensitive matching via SQL `COLLATE NOCASE`** instead of normalizing at the
+  service layer — rejected in favor of lowercasing at the boundary; simpler, no schema
+  collation change needed, and consistent with how virtually every real system treats
+  email local-parts in practice.
+- **Keeping `username` and adding `email` alongside it, unused** — rejected as the
+  weakest option: adds schema/UX surface with no real function, harder to defend than
+  either committing to email or leaving username as-is.
+
+**Trade-offs:** No email verification exists (no SMTP capability, per ADR-009's
+original "no email service" scope decision) — an unverified email is, at the trust
+level, no stronger than an unverified username was. This is a realism/UX choice, not a
+security upgrade, and worth being explicit about if asked. Also required deleting the
+local dev SQLite file (no migration framework, ADR-012) since the schema itself
+changed shape, not just restarted — a one-time local data loss, acceptable since only
+test data existed.
 
 ---
 

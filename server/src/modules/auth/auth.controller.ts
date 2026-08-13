@@ -10,15 +10,21 @@ const COOKIE_OPTIONS = {
 };
 
 export function signup(req: AuthenticatedRequest, res: Response) {
-  const result = authService.signup(req.body?.username, req.body?.password);
+  const result = authService.signup(
+    req.body?.email,
+    req.body?.password,
+    req.body?.displayName,
+  );
   res.cookie("token", result.token, COOKIE_OPTIONS);
-  res.status(201).json({ id: result.id, username: result.username });
+  res
+    .status(201)
+    .json({ id: result.id, email: result.email, displayName: result.displayName });
 }
 
 export function login(req: AuthenticatedRequest, res: Response) {
-  const result = authService.login(req.body?.username, req.body?.password);
+  const result = authService.login(req.body?.email, req.body?.password);
   res.cookie("token", result.token, COOKIE_OPTIONS);
-  res.json({ id: result.id, username: result.username });
+  res.json({ id: result.id, email: result.email, displayName: result.displayName });
 }
 
 export function logout(_req: AuthenticatedRequest, res: Response) {
@@ -27,5 +33,5 @@ export function logout(_req: AuthenticatedRequest, res: Response) {
 }
 
 export function me(req: AuthenticatedRequest, res: Response) {
-  res.json({ id: req.user!.userId, username: req.user!.username });
+  res.json(authService.getProfile(req.user!.userId));
 }

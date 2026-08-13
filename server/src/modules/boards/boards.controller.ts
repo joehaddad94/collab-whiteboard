@@ -66,7 +66,7 @@ export function inviteMember(req: AuthenticatedRequest, res: Response) {
   const { alreadyMember, ...body } = boardsService.inviteMember(
     boardId,
     req.user!.userId,
-    req.body?.username,
+    req.body?.email,
   );
   res.status(alreadyMember ? 200 : 201).json(body);
 }

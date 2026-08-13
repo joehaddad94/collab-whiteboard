@@ -17,7 +17,7 @@ function isValidPoint(point: unknown): point is { x: number; y: number } {
 }
 
 export function registerBoardHandlers(io: Server, socket: Socket) {
-  const user = socket.data.user as { userId: number; username: string };
+  const user = socket.data.user as { userId: number; displayName: string };
 
   function activeSession(): {
     boardId: number;
@@ -50,7 +50,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     );
     session.connectedUsers.set(socket.id, {
       userId: user.userId,
-      username: user.username,
+      displayName: user.displayName,
     });
 
     socket.emit("board-joined", {
@@ -60,7 +60,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
     socket.to(roomName).emit("user-joined", {
       userId: user.userId,
-      username: user.username,
+      displayName: user.displayName,
     });
   });
 
@@ -201,11 +201,26 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
     io.to(active.roomName).emit("stroke-restored", { stroke });
   });
+
+  socket.on("cursor-move", (payload: { x?: unknown; y?: unknown }) => {
+    const active = activeSession();
+    if (!active) return;
+
+    const { x, y } = payload ?? {};
+    if (typeof x !== "number" || typeof y !== "number") return;
+
+    socket.to(active.roomName).emit("cursor-update", {
+      userId: user.userId,
+      displayName: user.displayName,
+      x,
+      y,
+    });
+  });
 }
 
 function leaveBoard(socket: Socket, boardId: number) {
   const roomName = String(boardId);
-  const user = socket.data.user as { userId: number; username: string };
+  const user = socket.data.user as { userId: number; displayName: string };
   const session = getSession(boardId);
 
   session?.connectedUsers.delete(socket.id);

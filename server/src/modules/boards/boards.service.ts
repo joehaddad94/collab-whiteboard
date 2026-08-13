@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../errors.js";
-import { findUserByUsername } from "../auth/auth.repository.js";
+import { findUserByEmail } from "../auth/auth.repository.js";
 import * as boardsRepository from "./boards.repository.js";
 import type { Role } from "./boards.repository.js";
 import type { Stroke } from "./boards.types.js";
@@ -106,15 +106,15 @@ export function listMembers(boardId: number, userId: number) {
 export function inviteMember(
   boardId: number,
   userId: number,
-  rawUsername: unknown,
+  rawEmail: unknown,
 ) {
   requireOwner(boardId, userId);
 
-  if (typeof rawUsername !== "string" || rawUsername.length === 0) {
-    throw new ValidationError("username is required");
+  if (typeof rawEmail !== "string" || rawEmail.length === 0) {
+    throw new ValidationError("email is required");
   }
 
-  const targetUser = findUserByUsername(rawUsername);
+  const targetUser = findUserByEmail(rawEmail.toLowerCase());
   if (!targetUser) {
     throw new NotFoundError("User not found");
   }
@@ -127,7 +127,7 @@ export function inviteMember(
   if (existing) {
     return {
       userId: targetUser.id,
-      username: targetUser.username,
+      displayName: targetUser.display_name,
       role: existing.role,
       alreadyMember: true,
     };
@@ -136,7 +136,7 @@ export function inviteMember(
   boardsRepository.insertMembership(boardId, targetUser.id, "editor");
   return {
     userId: targetUser.id,
-    username: targetUser.username,
+    displayName: targetUser.display_name,
     role: "editor" as Role,
     alreadyMember: false,
   };
