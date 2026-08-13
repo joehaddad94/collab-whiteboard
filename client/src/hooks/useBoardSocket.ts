@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import type { ConnectedUser } from "../types";
+import type { ConnectedUser, CursorPosition } from "../types";
 
 const SOCKET_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
@@ -16,6 +16,7 @@ export function useBoardSocket(boardId: number) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
+  const [cursors, setCursors] = useState<Record<number, CursorPosition>>({});
   const [leaveReason, setLeaveReason] = useState<BoardLeaveReason>(null);
   const [socketError, setSocketError] = useState<string | null>(null);
 
@@ -52,6 +53,16 @@ export function useBoardSocket(boardId: number) {
 
     socket.on("user-left", ({ userId }: { userId: number }) => {
       setConnectedUsers((prev) => prev.filter((u) => u.userId !== userId));
+      setCursors((prev) => {
+        if (!(userId in prev)) return prev;
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    });
+
+    socket.on("cursor-update", (cursor: CursorPosition) => {
+      setCursors((prev) => ({ ...prev, [cursor.userId]: cursor }));
     });
 
     socket.on("removed-from-board", () => setLeaveReason("removed"));
@@ -72,6 +83,7 @@ export function useBoardSocket(boardId: number) {
     socket,
     connected,
     connectedUsers,
+    cursors,
     leaveReason,
     socketError,
     clearSocketError,

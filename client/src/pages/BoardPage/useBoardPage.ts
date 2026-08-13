@@ -21,8 +21,15 @@ export function useBoardPage() {
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
 
-  const { socket, connected, connectedUsers, leaveReason, socketError, clearSocketError } =
-    useBoardSocket(boardId);
+  const {
+    socket,
+    connected,
+    connectedUsers,
+    cursors,
+    leaveReason,
+    socketError,
+    clearSocketError,
+  } = useBoardSocket(boardId);
 
   useEffect(() => {
     if (!Number.isInteger(boardId)) {
@@ -71,6 +78,7 @@ export function useBoardPage() {
     socket,
     connected,
     connectedUsers,
+    cursors,
     socketError,
     clearSocketError,
     userId: user?.id ?? null,

@@ -47,3 +47,10 @@ export interface ConnectedUser {
   userId: number;
   displayName: string;
 }
+
+export interface CursorPosition {
+  userId: number;
+  displayName: string;
+  x: number;
+  y: number;
+}

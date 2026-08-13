@@ -1,5 +1,6 @@
 import { Whiteboard } from "../../components/Whiteboard";
 import { Toolbar } from "../../components/Toolbar";
+import { CursorOverlay } from "../../components/CursorOverlay";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -9,6 +10,7 @@ export function BoardPage() {
     socket,
     connected,
     connectedUsers,
+    cursors,
     socketError,
     clearSocketError,
     userId,
@@ -82,6 +84,7 @@ export function BoardPage() {
               onRedo={redo}
               onClear={clearBoard}
             />
+            <CursorOverlay cursors={cursors} />
           </>
         )}
       </div>

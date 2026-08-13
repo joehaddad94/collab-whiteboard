@@ -10,6 +10,8 @@ interface UseWhiteboardOptions {
   socket: Socket | null;
 }
 
+const CURSOR_THROTTLE_MS = 40;
+
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.points.length === 0) return;
   ctx.globalCompositeOperation =
@@ -42,6 +44,7 @@ export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhi
   const currentStrokeRef = useRef<Stroke | null>(null);
   const remoteInProgressRef = useRef<Map<string, Stroke>>(new Map());
   const strokesRef = useRef<Stroke[]>([]);
+  const lastCursorEmitRef = useRef(0);
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
 
@@ -197,11 +200,18 @@ export function useWhiteboard({ userId, tool, color, brushSize, socket }: UseWhi
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
+    const point = getPoint(e);
+
+    const now = Date.now();
+    if (now - lastCursorEmitRef.current >= CURSOR_THROTTLE_MS) {
+      lastCursorEmitRef.current = now;
+      socket?.emit("cursor-move", point);
+    }
+
     const stroke = currentStrokeRef.current;
     const ctx = canvasRef.current?.getContext("2d");
     if (!stroke || !ctx) return;
 
-    const point = getPoint(e);
     stroke.points.push(point);
     drawStroke(ctx, { ...stroke, points: stroke.points.slice(-2) });
 
