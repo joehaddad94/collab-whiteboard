@@ -42,3 +42,8 @@ export interface Stroke {
 export interface ApiError {
   error: string;
 }
+
+export interface ConnectedUser {
+  userId: number;
+  displayName: string;
+}

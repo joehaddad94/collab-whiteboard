@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { BoardListPage } from "./pages/BoardListPage";
+import { BoardPage } from "./pages/BoardPage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/boards" element={<BoardListPage />} />
+            <Route path="/boards/:id" element={<BoardPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/boards" replace />} />
         </Routes>
