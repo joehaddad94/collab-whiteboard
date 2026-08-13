@@ -1,29 +1,16 @@
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { ApiRequestError } from "../hooks/useApi";
+import { Link } from "react-router-dom";
+import { useLoginPage } from "./useLoginPage";
 
 export function LoginPage() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      await login(email, password);
-      navigate("/boards");
-    } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Login failed");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    error,
+    submitting,
+    handleSubmit,
+  } = useLoginPage();
 
   return (
     <div className="auth-page">
