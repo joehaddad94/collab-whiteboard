@@ -11,7 +11,7 @@ export function Header() {
       </Link>
       {user && (
         <div className="app-header-user">
-          <span>{user.username}</span>
+          <span>{user.displayName}</span>
           <button type="button" onClick={() => void logout()}>
             Log out
           </button>

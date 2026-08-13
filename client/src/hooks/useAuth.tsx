@@ -12,8 +12,12 @@ import type { User } from "../types";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  signup: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    displayName: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -40,13 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(username: string, password: string) {
-    const loggedInUser = await api.auth.login(username, password);
+  async function login(email: string, password: string) {
+    const loggedInUser = await api.auth.login(email, password);
     setUser(loggedInUser);
   }
 
-  async function signup(username: string, password: string) {
-    const newUser = await api.auth.signup(username, password);
+  async function signup(
+    email: string,
+    password: string,
+    displayName: string,
+  ) {
+    const newUser = await api.auth.signup(email, password, displayName);
     setUser(newUser);
   }
 

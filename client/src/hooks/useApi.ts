@@ -8,9 +8,6 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
-// Set by AuthContext so any 401 from an authenticated call can bounce back to /login.
-// Left unset during the initial /auth/me probe, which treats 401 as "not logged in" rather
-// than an error.
 let onUnauthorized: (() => void) | null = null;
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
@@ -48,7 +45,6 @@ async function request<T>(
       const body = (await res.json()) as ApiError;
       if (body.error) message = body.error;
     } catch {
-      // no JSON body — keep statusText
     }
     throw new ApiRequestError(res.status, message);
   }
@@ -59,15 +55,15 @@ async function request<T>(
 
 export const api = {
   auth: {
-    signup: (username: string, password: string) =>
+    signup: (email: string, password: string, displayName: string) =>
       request<User>("/api/auth/signup", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password, displayName }),
       }),
-    login: (username: string, password: string) =>
+    login: (email: string, password: string) =>
       request<User>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
     me: () =>

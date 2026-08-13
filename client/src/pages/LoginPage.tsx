@@ -6,7 +6,7 @@ import { ApiRequestError } from "../hooks/useApi";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -16,7 +16,7 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(username, password);
+      await login(email, password);
       navigate("/boards");
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Login failed");
@@ -31,11 +31,12 @@ export function LoginPage() {
         <h1>Log in</h1>
         {error && <p className="form-error">{error}</p>}
         <label>
-          Username
+          Email
           <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
         </label>
