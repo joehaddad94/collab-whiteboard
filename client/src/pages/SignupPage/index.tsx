@@ -17,6 +17,9 @@ export function SignupPage() {
   return (
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
+        <Link to="/login" className="app-header-brand">
+          Collab Whiteboard
+        </Link>
         <h1>Sign up</h1>
         {error && <p className="form-error">{error}</p>}
         <label>
@@ -48,7 +51,7 @@ export function SignupPage() {
             required
           />
         </label>
-        <button type="submit" disabled={submitting}>
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
           {submitting ? "Signing up…" : "Sign up"}
         </button>
         <p className="auth-switch">

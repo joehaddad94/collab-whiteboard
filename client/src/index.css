@@ -1,5 +1,73 @@
 :root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --bg-app: #f5f4f0;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #ffffff;
+  --bg-sunken: #ecebe6;
+  --ink-900: #1b1d22;
+  --ink-700: #3a3d44;
+  --ink-600: #5a5f68;
+  --ink-400: #8b8f97;
+  --ink-300: #d4d6da;
+  --ink-200: #e4e5e8;
+  --border: #dcdde1;
+
+  --accent: #2454ff;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8edff;
+  --accent-soft-border: #c7d3ff;
+
+  --danger: #d6483f;
+  --danger-soft: #fbe7e5;
+  --success: #1f9d55;
+  --success-soft: #e4f6ea;
+
+  --canvas-bg: #fffdf8;
+  --canvas-dot: #d8d5cb;
+
+  --shadow-sm: 0 1px 2px rgba(27, 29, 34, 0.08);
+  --shadow-md: 0 6px 20px rgba(27, 29, 34, 0.12);
+  --shadow-float: 0 10px 30px rgba(27, 29, 34, 0.18);
+
+  --radius: 7px;
+  --radius-sm: 4px;
+
   color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-app: #15171b;
+    --bg-surface: #1d2025;
+    --bg-surface-raised: #23262c;
+    --bg-sunken: #101215;
+    --ink-900: #eef0f2;
+    --ink-700: #cfd2d8;
+    --ink-600: #9aa0ac;
+    --ink-400: #6b7078;
+    --ink-300: #33373f;
+    --ink-200: #2a2d33;
+    --border: #2e323a;
+
+    --accent: #6b8bff;
+    --accent-ink: #0d1220;
+    --accent-soft: #202a4a;
+    --accent-soft-border: #33417a;
+
+    --danger: #ef6a61;
+    --danger-soft: #3a2222;
+    --success: #3fbf74;
+    --success-soft: #16301f;
+
+    --canvas-bg: #fbfaf6;
+    --canvas-dot: #ddd9cd;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
 }
 
 * {
@@ -14,14 +82,213 @@ body,
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-app);
+  color: var(--ink-900);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+button,
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  font-weight: 600;
+  font-size: 14px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.btn:hover {
+  border-color: var(--ink-400);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover {
+  filter: brightness(1.06);
+}
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.btn-ghost:hover {
+  background: var(--bg-sunken);
+  border-color: transparent;
+}
+.btn-danger {
+  color: var(--danger);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-icon {
+  padding: 8px;
+}
+
+/* ---------- forms ---------- */
+.field-hint {
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin: 0 0 14px;
+}
+
+/* ---------- app header ---------- */
+.app-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+.app-header-brand {
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
+  text-decoration: none;
+}
+.app-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+
+/* ---------- auth pages ---------- */
+.auth-page {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--bg-app);
+  background-image: radial-gradient(var(--ink-200) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.auth-form {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: var(--shadow-md);
+}
+.auth-form .app-header-brand {
+  display: block;
+  margin-bottom: 22px;
+}
+.auth-form h1 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700);
+}
+.auth-form input {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  font-weight: 400;
+  font-size: 15px;
+}
+.auth-form input:focus {
+  border-color: var(--accent);
+}
+.auth-form button[type="submit"] {
+  width: 100%;
+  justify-content: center;
+  padding: 11px;
+  margin-top: 4px;
+}
+.auth-switch {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--ink-600);
+  margin-top: 20px;
+}
+.auth-switch a {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------- misc ---------- */
 .page-loading {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
+  color: var(--ink-600);
+}
+
+.empty-state {
+  color: var(--ink-400);
+  padding: 40px 0;
+  text-align: center;
+  font-size: 14px;
 }
 
 .board-page {
@@ -33,6 +300,9 @@ body {
 .board-canvas-area {
   flex: 1;
   min-height: 0;
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
 
 .whiteboard-container {

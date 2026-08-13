@@ -12,7 +12,7 @@ export function Header() {
       {user && (
         <div className="app-header-user">
           <span>{user.displayName}</span>
-          <button type="button" onClick={() => void logout()}>
+          <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
             Log out
           </button>
         </div>
