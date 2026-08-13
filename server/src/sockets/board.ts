@@ -36,8 +36,8 @@ function isValidPoint(point: unknown): point is { x: number; y: number } {
 }
 
 // Registers join/leave/disconnect handling for one connected socket (ADR-017/019),
-// plus streamed drawing events and clear (ADR-017). Cursor, undo/redo, and chat
-// events are wired up in later steps.
+// plus streamed drawing events, clear, and undo/redo (ADR-007/017). Cursor and
+// chat events are wired up in later steps.
 export function registerBoardHandlers(io: Server, socket: Socket) {
   const user = socket.data.user as { userId: number; username: string };
 
@@ -190,6 +190,48 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     active.session.redoStack.clear();
 
     io.to(active.roomName).emit("board-cleared");
+  });
+
+  // Per-user undo/redo (ADR-007). Silent no-op on an empty stack — no error
+  // event, since "nothing to undo" isn't really a failure. Broadcast to the
+  // whole room including the actor (like clear, unlike drawing) because the
+  // *specific* stroke affected is determined by the server-held stack, not
+  // something the client already knows for certain before asking.
+  socket.on("undo", () => {
+    const active = activeSession();
+    if (!active) return;
+
+    const undoStack = active.session.undoStack.get(user.userId);
+    const stroke = undoStack?.pop();
+    if (!stroke) return;
+
+    const index = active.session.strokes.findIndex((s) => s.id === stroke.id);
+    if (index !== -1) {
+      active.session.strokes.splice(index, 1);
+    }
+
+    const redoStack = active.session.redoStack.get(user.userId) ?? [];
+    redoStack.push(stroke);
+    active.session.redoStack.set(user.userId, redoStack);
+
+    io.to(active.roomName).emit("stroke-removed", { strokeId: stroke.id });
+  });
+
+  socket.on("redo", () => {
+    const active = activeSession();
+    if (!active) return;
+
+    const redoStack = active.session.redoStack.get(user.userId);
+    const stroke = redoStack?.pop();
+    if (!stroke) return;
+
+    active.session.strokes.push(stroke);
+
+    const undoStack = active.session.undoStack.get(user.userId) ?? [];
+    undoStack.push(stroke);
+    active.session.undoStack.set(user.userId, undoStack);
+
+    io.to(active.roomName).emit("stroke-restored", { stroke });
   });
 }
 
