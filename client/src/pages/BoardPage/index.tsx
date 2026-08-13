@@ -1,4 +1,5 @@
 import { Header } from "../../components/Header";
+import { Whiteboard } from "../../components/Whiteboard";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -9,11 +10,12 @@ export function BoardPage() {
     connectedUsers,
     socketError,
     clearSocketError,
+    userId,
     goBack,
   } = useBoardPage();
 
   return (
-    <div className="page">
+    <div className="board-page">
       <Header />
       <div className="board-page-toolbar">
         <button type="button" onClick={goBack}>
@@ -47,7 +49,11 @@ export function BoardPage() {
         )}
       </div>
 
-      <p className="board-placeholder">Canvas coming next.</p>
+      <div className="board-canvas-area">
+        {userId !== null && (
+          <Whiteboard userId={userId} tool="pen" color="#1b1d22" brushSize={4} />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
+import { useAuth } from "../../hooks/useAuth";
 import { api, ApiRequestError } from "../../hooks/useApi";
 import type { BoardDetail } from "../../types";
 
@@ -8,6 +9,7 @@ export function useBoardPage() {
   const { id } = useParams<{ id: string }>();
   const boardId = Number(id);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export function useBoardPage() {
     connectedUsers,
     socketError,
     clearSocketError,
+    userId: user?.id ?? null,
     goBack: () => navigate("/boards"),
   };
 }
