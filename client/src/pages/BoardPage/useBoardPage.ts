@@ -3,7 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
 import { useAuth } from "../../hooks/useAuth";
 import { api, ApiRequestError } from "../../hooks/useApi";
-import type { BoardDetail } from "../../types";
+import type { BoardDetail, Tool } from "../../types";
+
+const DEFAULT_COLOR = "#1b1d22";
+const DEFAULT_BRUSH_SIZE = 4;
 
 export function useBoardPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +16,10 @@ export function useBoardPage() {
 
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [tool, setTool] = useState<Tool>("pen");
+  const [color, setColor] = useState(DEFAULT_COLOR);
+  const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
 
   const { connected, connectedUsers, leaveReason, socketError, clearSocketError } =
     useBoardSocket(boardId);
@@ -54,5 +61,11 @@ export function useBoardPage() {
     clearSocketError,
     userId: user?.id ?? null,
     goBack: () => navigate("/boards"),
+    tool,
+    setTool,
+    color,
+    setColor,
+    brushSize,
+    setBrushSize,
   };
 }

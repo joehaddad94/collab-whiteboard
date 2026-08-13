@@ -1,4 +1,5 @@
 import { Whiteboard } from "../../components/Whiteboard";
+import { Toolbar } from "../../components/Toolbar";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -11,6 +12,12 @@ export function BoardPage() {
     clearSocketError,
     userId,
     goBack,
+    tool,
+    setTool,
+    color,
+    setColor,
+    brushSize,
+    setBrushSize,
   } = useBoardPage();
 
   return (
@@ -52,7 +59,17 @@ export function BoardPage() {
 
       <div className="board-canvas-area">
         {userId !== null && (
-          <Whiteboard userId={userId} tool="pen" color="#1b1d22" brushSize={4} />
+          <>
+            <Whiteboard userId={userId} tool={tool} color={color} brushSize={brushSize} />
+            <Toolbar
+              tool={tool}
+              onToolChange={setTool}
+              color={color}
+              onColorChange={setColor}
+              brushSize={brushSize}
+              onBrushSizeChange={setBrushSize}
+            />
+          </>
         )}
       </div>
     </div>
