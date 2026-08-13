@@ -4,11 +4,14 @@ import { NotFoundError } from "../../errors.js";
 import * as boardsService from "./boards.service.js";
 import { evictAllFromBoard, evictUserFromBoard } from "../../sockets/realtime.js";
 
-function parseId(raw: string | string[] | undefined): number {
+function parseId(
+  raw: string | string[] | undefined,
+  notFoundMessage = "Board not found",
+): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const id = Number(value);
   if (!Number.isInteger(id)) {
-    throw new NotFoundError("Board not found");
+    throw new NotFoundError(notFoundMessage);
   }
   return id;
 }
@@ -75,7 +78,7 @@ export function inviteMember(req: AuthenticatedRequest, res: Response) {
 
 export function removeMember(req: AuthenticatedRequest, res: Response) {
   const boardId = parseId(req.params.id);
-  const targetUserId = parseId(req.params.userId);
+  const targetUserId = parseId(req.params.userId, "Member not found");
   boardsService.removeMember(boardId, req.user!.userId, targetUserId);
   evictUserFromBoard(boardId, targetUserId);
   res.status(204).send();

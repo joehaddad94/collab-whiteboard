@@ -943,6 +943,25 @@ re-benchmarked with a timing test here.
 
 ---
 
+## ADR-028: Minor cleanup — `removeMember` query, `parseId` error message
+
+**Decision:**
+- `boards.service.ts`'s `removeMember` now calls `findBoardSummaryById` instead of
+  `findBoardById` to check `owner_id` — avoids fetching/deserializing the `data` JSON
+  blob just to read one integer field.
+- `boards.controller.ts`'s `parseId` takes an optional `notFoundMessage` parameter
+  (defaults to `"Board not found"`); `removeMember` passes `"Member not found"` when
+  parsing the target user id, so a malformed target id reports the right resource
+  instead of always blaming the board.
+
+**Context:** Both found during the backend audit — neither is a functional bug on the
+happy path, just unnecessary I/O and a misleading error message on a malformed
+request.
+
+**Trade-offs:** None.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

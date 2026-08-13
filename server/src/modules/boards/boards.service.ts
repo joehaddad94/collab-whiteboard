@@ -149,7 +149,7 @@ export function removeMember(
 ) {
   requireOwner(boardId, userId);
 
-  const board = boardsRepository.findBoardById(boardId);
+  const board = boardsRepository.findBoardSummaryById(boardId);
   if (board && targetUserId === board.owner_id) {
     throw new ValidationError("Cannot remove the board owner");
   }
