@@ -1,14 +1,32 @@
-import express from "express";
+import express, {
+  type ErrorRequestHandler,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import authRouter from "./routes/auth.js";
-import boardsRouter from "./routes/boards.js";
+import authRouter from "./modules/auth/auth.routes.js";
+import boardsRouter from "./modules/boards/boards.routes.js";
+import { AppError } from "./errors.js";
+
+const errorHandler: ErrorRequestHandler = (
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
+  if (err instanceof AppError) {
+    res.status(err.status).json({ error: err.message });
+    return;
+  }
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
+};
 
 export function createApp() {
   const app = express();
 
-  // Explicit origin (not "*") + credentials: true is required for the httpOnly
-  // auth cookie to work across the client/server origins in dev (ADR-015).
   app.use(
     cors({
       origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
@@ -24,6 +42,8 @@ export function createApp() {
 
   app.use("/api/auth", authRouter);
   app.use("/api/boards", boardsRouter);
+
+  app.use(errorHandler);
 
   return app;
 }

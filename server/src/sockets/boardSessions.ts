@@ -1,15 +1,4 @@
-// In-memory per-board session state (ADR-017). Hydrated from Board.data on first
-// join, evicted once the last connected client leaves — never persisted directly;
-// only an explicit save (PUT /api/boards/:id/data) writes back to SQLite.
-
-export interface Stroke {
-  id: string;
-  userId: number;
-  tool: "pen" | "eraser";
-  color: string;
-  brushSize: number;
-  points: { x: number; y: number }[];
-}
+import type { Stroke } from "../modules/boards/boards.types.js";
 
 export interface ConnectedUser {
   userId: number;
@@ -18,16 +7,9 @@ export interface ConnectedUser {
 
 export interface BoardSession {
   strokes: Stroke[];
-  // Strokes currently being drawn (between stroke-start and stroke-end), keyed by
-  // strokeId. stroke-end's payload is just { strokeId } (ADR-017), so the server
-  // must accumulate the points itself from stroke-start/stroke-point to know what
-  // to move into `strokes` once the stroke finishes.
   inProgressStrokes: Map<string, Stroke>;
-  // Keyed by userId — undo/redo is per-user (ADR-007), not global.
   undoStack: Map<number, Stroke[]>;
   redoStack: Map<number, Stroke[]>;
-  // Keyed by socket.id, since one user could theoretically hold multiple sockets
-  // (e.g. two tabs) — presence is tracked per connection, not per user.
   connectedUsers: Map<string, ConnectedUser>;
 }
 

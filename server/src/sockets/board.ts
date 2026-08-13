@@ -1,30 +1,11 @@
 import type { Server, Socket } from "socket.io";
-import { db } from "../db/index.js";
+import * as boardsService from "../modules/boards/boards.service.js";
 import {
   getSession,
   getOrCreateSession,
   removeSessionIfEmpty,
-  type Stroke,
 } from "./boardSessions.js";
-
-interface BoardDataRow {
-  data: string;
-}
-
-function loadStrokesFromDb(boardId: number): Stroke[] {
-  const board = db
-    .prepare("SELECT data FROM Board WHERE id = ?")
-    .get(boardId) as BoardDataRow | undefined;
-  return board ? (JSON.parse(board.data) as Stroke[]) : [];
-}
-
-function isMember(boardId: number, userId: number): boolean {
-  return (
-    db
-      .prepare("SELECT 1 FROM BoardMember WHERE board_id = ? AND user_id = ?")
-      .get(boardId, userId) !== undefined
-  );
-}
+import type { Stroke } from "../modules/boards/boards.types.js";
 
 function isValidPoint(point: unknown): point is { x: number; y: number } {
   return (
@@ -35,16 +16,14 @@ function isValidPoint(point: unknown): point is { x: number; y: number } {
   );
 }
 
-// Registers join/leave/disconnect handling for one connected socket (ADR-017/019),
-// plus streamed drawing events, clear, and undo/redo (ADR-007/017). Cursor and
-// chat events are wired up in later steps.
 export function registerBoardHandlers(io: Server, socket: Socket) {
   const user = socket.data.user as { userId: number; username: string };
 
-  // Shared guard for every drawing-related event below: the socket must have
-  // actually joined a board room (and that board must still have a live session)
-  // before any stroke/clear event from it is meaningful.
-  function activeSession(): { boardId: number; roomName: string; session: NonNullable<ReturnType<typeof getSession>> } | null {
+  function activeSession(): {
+    boardId: number;
+    roomName: string;
+    session: NonNullable<ReturnType<typeof getSession>>;
+  } | null {
     const boardId = socket.data.currentBoardId as number | undefined;
     if (boardId === undefined) return null;
     const session = getSession(boardId);
@@ -54,9 +33,10 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
   socket.on("join-board", (payload: { boardId?: unknown }) => {
     const boardId = Number(payload?.boardId);
-    if (!Number.isInteger(boardId) || !isMember(boardId, user.userId)) {
-      // Same non-leaking posture as GET /api/boards/:id (ADR-016) — a generic
-      // rejection, not "board doesn't exist" vs "you're not a member".
+    if (
+      !Number.isInteger(boardId) ||
+      !boardsService.isMember(boardId, user.userId)
+    ) {
       socket.emit("error", { message: "Not authorized to join this board" });
       return;
     }
@@ -65,13 +45,14 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     socket.join(roomName);
     socket.data.currentBoardId = boardId;
 
-    const session = getOrCreateSession(boardId, () => loadStrokesFromDb(boardId));
+    const session = getOrCreateSession(boardId, () =>
+      boardsService.getBoardStrokes(boardId),
+    );
     session.connectedUsers.set(socket.id, {
       userId: user.userId,
       username: user.username,
     });
 
-    // Full resync to the joining client — strokes + presence snapshot (ADR-017).
     socket.emit("board-joined", {
       strokes: session.strokes,
       users: Array.from(session.connectedUsers.values()),
@@ -97,7 +78,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     }
   });
 
-  // Eraser is just a stroke with tool: "eraser" (ADR-006/017) — no separate events.
   socket.on(
     "stroke-start",
     (payload: {
@@ -145,8 +125,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       if (typeof strokeId !== "string" || !isValidPoint(point)) return;
 
       const stroke = active.session.inProgressStrokes.get(strokeId);
-      // Ignore points for a stroke this socket's user didn't start — prevents
-      // one user from appending to another user's in-progress stroke.
       if (!stroke || stroke.userId !== user.userId) return;
 
       stroke.points.push(point);
@@ -170,16 +148,11 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     const undoStack = active.session.undoStack.get(user.userId) ?? [];
     undoStack.push(stroke);
     active.session.undoStack.set(user.userId, undoStack);
-    // A new completed stroke invalidates this user's old redo history.
     active.session.redoStack.set(user.userId, []);
 
     socket.to(active.roomName).emit("stroke-end", { strokeId });
   });
 
-  // Clear is not undoable (ADR-017/007) — resets strokes and every user's
-  // undo/redo stacks. Broadcast to the whole room including the sender (unlike
-  // drawing events), so there's one authoritative "board is now empty" moment
-  // rather than the clearer assuming their own local clear matches the server.
   socket.on("clear-board", () => {
     const active = activeSession();
     if (!active) return;
@@ -192,11 +165,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
     io.to(active.roomName).emit("board-cleared");
   });
 
-  // Per-user undo/redo (ADR-007). Silent no-op on an empty stack — no error
-  // event, since "nothing to undo" isn't really a failure. Broadcast to the
-  // whole room including the actor (like clear, unlike drawing) because the
-  // *specific* stroke affected is determined by the server-held stack, not
-  // something the client already knows for certain before asking.
   socket.on("undo", () => {
     const active = activeSession();
     if (!active) return;
