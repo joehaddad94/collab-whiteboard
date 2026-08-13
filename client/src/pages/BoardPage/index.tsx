@@ -1,4 +1,3 @@
-import { Header } from "../../components/Header";
 import { Whiteboard } from "../../components/Whiteboard";
 import { useBoardPage } from "./useBoardPage";
 
@@ -16,38 +15,40 @@ export function BoardPage() {
 
   return (
     <div className="board-page">
-      <Header />
       <div className="board-page-toolbar">
-        <button type="button" onClick={goBack}>
-          &larr; Back to boards
-        </button>
-        <h2>{board?.name ?? "Loading board…"}</h2>
-        <span className="connection-status">
-          {connected ? "Connected" : "Connecting…"}
-        </span>
+        <div className="board-title-group">
+          <button type="button" className="btn btn-ghost" onClick={goBack}>
+            &larr; Boards
+          </button>
+          <h2>{board?.name ?? "Loading board…"}</h2>
+          <span className="connection-status">
+            <span className={`dot ${connected ? "dot-success" : "dot-pending"}`} />
+            {connected ? "Connected" : "Connecting…"}
+          </span>
+        </div>
+
+        <div className="board-presence">
+          {connectedUsers.length === 0 ? (
+            <span className="board-presence-empty">No one else here yet</span>
+          ) : (
+            connectedUsers.map((u) => (
+              <span key={u.userId} className="presence-chip">
+                {u.displayName}
+              </span>
+            ))
+          )}
+        </div>
       </div>
 
-      {loadError && <p className="form-error">{loadError}</p>}
+      {loadError && <p className="form-error board-page-banner">{loadError}</p>}
       {socketError && (
-        <p className="form-error">
+        <p className="form-error board-page-banner">
           {socketError}{" "}
-          <button type="button" onClick={clearSocketError}>
+          <button type="button" className="btn btn-ghost btn-icon" onClick={clearSocketError}>
             Dismiss
           </button>
         </p>
       )}
-
-      <div className="board-presence">
-        {connectedUsers.length === 0 ? (
-          <p>No one else here yet.</p>
-        ) : (
-          <ul>
-            {connectedUsers.map((u) => (
-              <li key={u.userId}>{u.displayName}</li>
-            ))}
-          </ul>
-        )}
-      </div>
 
       <div className="board-canvas-area">
         {userId !== null && (
