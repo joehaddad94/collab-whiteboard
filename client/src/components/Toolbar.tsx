@@ -1,4 +1,5 @@
 import type { Tool } from "../types";
+import { PenIcon, EraserIcon, UndoIcon, RedoIcon, ClearIcon } from "./icons";
 
 const COLORS = ["#1b1d22", "#2454ff", "#ff6b4a", "#14b8a6", "#f5a623", "#8b5cf6"];
 const MIN_BRUSH_SIZE = 2;
@@ -33,15 +34,19 @@ export function Toolbar({
         type="button"
         className={`tool-btn ${tool === "pen" ? "active" : ""}`}
         onClick={() => onToolChange("pen")}
+        title="Pen"
+        aria-label="Pen"
       >
-        Pen
+        <PenIcon />
       </button>
       <button
         type="button"
         className={`tool-btn ${tool === "eraser" ? "active" : ""}`}
         onClick={() => onToolChange("eraser")}
+        title="Eraser"
+        aria-label="Eraser"
       >
-        Eraser
+        <EraserIcon />
       </button>
 
       <div className="toolbar-sep" />
@@ -73,14 +78,20 @@ export function Toolbar({
 
       <div className="toolbar-sep" />
 
-      <button type="button" className="tool-btn" onClick={onUndo}>
-        Undo
+      <button type="button" className="tool-btn" onClick={onUndo} title="Undo" aria-label="Undo">
+        <UndoIcon />
       </button>
-      <button type="button" className="tool-btn" onClick={onRedo}>
-        Redo
+      <button type="button" className="tool-btn" onClick={onRedo} title="Redo" aria-label="Redo">
+        <RedoIcon />
       </button>
-      <button type="button" className="tool-btn" onClick={onClear}>
-        Clear
+      <button
+        type="button"
+        className="tool-btn"
+        onClick={onClear}
+        title="Clear board"
+        aria-label="Clear board"
+      >
+        <ClearIcon />
       </button>
     </div>
   );

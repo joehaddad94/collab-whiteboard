@@ -1,4 +1,6 @@
 import type { ChatMessage } from "../../types";
+import { CloseIcon } from "../icons";
+import { Avatar } from "../Avatar";
 import { useChatPanel } from "./useChatPanel";
 
 interface ChatPanelProps {
@@ -22,8 +24,13 @@ export function ChatPanel({ messages, currentUserId, onSend, onClose }: ChatPane
     <aside className="chat-panel">
       <div className="chat-head">
         Board chat
-        <button type="button" className="btn btn-ghost btn-icon" onClick={onClose}>
-          ×
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          onClick={onClose}
+          aria-label="Close chat"
+        >
+          <CloseIcon />
         </button>
       </div>
       <div className="chat-messages" ref={listRef}>
@@ -32,13 +39,16 @@ export function ChatPanel({ messages, currentUserId, onSend, onClose }: ChatPane
         ) : (
           messages.map((m) => (
             <div key={m.id} className="chat-msg">
-              <div className="chat-msg-who">
-                <span className="chat-msg-name">
-                  {m.userId === currentUserId ? "You" : m.displayName}
-                </span>
-                <span className="chat-msg-time">{formatTime(m.createdAt)}</span>
+              <Avatar name={m.displayName} userId={m.userId} size={24} />
+              <div className="chat-msg-body">
+                <div className="chat-msg-who">
+                  <span className="chat-msg-name">
+                    {m.userId === currentUserId ? "You" : m.displayName}
+                  </span>
+                  <span className="chat-msg-time">{formatTime(m.createdAt)}</span>
+                </div>
+                <div className="chat-msg-text">{m.text}</div>
               </div>
-              <div className="chat-msg-text">{m.text}</div>
             </div>
           ))
         )}

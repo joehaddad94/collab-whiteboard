@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BrandIcon } from "../../components/icons";
 import { useLoginPage } from "./useLoginPage";
 
 export function LoginPage() {
@@ -16,6 +17,7 @@ export function LoginPage() {
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
         <Link to="/login" className="app-header-brand">
+          <BrandIcon size={22} />
           Collab Whiteboard
         </Link>
         <h1>Log in</h1>

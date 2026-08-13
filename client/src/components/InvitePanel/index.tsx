@@ -1,3 +1,4 @@
+import { CloseIcon } from "../icons";
 import { useInvitePanel } from "./useInvitePanel";
 
 interface InvitePanelProps {
@@ -31,8 +32,13 @@ export function InvitePanel({
     <div className="invite-panel">
       <div className="invite-panel-head">
         <h3>Invite people</h3>
-        <button type="button" className="btn btn-ghost btn-icon" onClick={onClose}>
-          ×
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <CloseIcon />
         </button>
       </div>
 

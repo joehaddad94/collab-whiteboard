@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { BrandIcon } from "../../components/icons";
 import { useSignupPage } from "./useSignupPage";
 
 export function SignupPage() {
@@ -18,6 +19,7 @@ export function SignupPage() {
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleSubmit}>
         <Link to="/login" className="app-header-brand">
+          <BrandIcon size={22} />
           Collab Whiteboard
         </Link>
         <h1>Sign up</h1>

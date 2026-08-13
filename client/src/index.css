@@ -153,6 +153,10 @@ a {
   background: var(--bg-sunken);
   border-color: transparent;
 }
+.btn-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
 .btn-danger {
   color: var(--danger);
 }
@@ -194,6 +198,9 @@ a {
   border-bottom: 1px solid var(--border);
 }
 .app-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   font-weight: 700;
   font-size: 16px;
   letter-spacing: -0.01em;
@@ -203,10 +210,21 @@ a {
 .app-header-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--ink-700);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 /* ---------- auth pages ---------- */
@@ -314,15 +332,46 @@ a {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-surface);
-  padding: 16px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+.board-list-item :is(.board-list-link, .board-rename-form, .board-list-actions) {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+.board-list-link {
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+.board-list-link:last-child {
+  margin-bottom: 16px;
+}
+.board-rename-form {
+  margin-top: 14px;
+  margin-bottom: 16px;
+}
+.board-list-actions {
+  margin-bottom: 16px;
+}
+.board-thumb {
+  height: 96px;
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+  background-size: 14px 14px;
+  position: relative;
+}
+.board-thumb svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .board-list-item:has(.board-list-link:hover) {
   box-shadow: var(--shadow-md);
   border-color: var(--ink-300);
+  transform: translateY(-1px);
 }
 .board-list-link {
   display: flex;
@@ -564,6 +613,13 @@ a {
   font-size: 12.5px;
   color: var(--ink-400);
 }
+.chat-msg {
+  display: flex;
+  gap: 8px;
+}
+.chat-msg-body {
+  min-width: 0;
+}
 .chat-msg-who {
   display: flex;
   align-items: baseline;
@@ -622,18 +678,17 @@ a {
   margin: 2px 4px;
 }
 .tool-btn {
-  min-width: 36px;
+  width: 36px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
-  font-weight: 600;
-  font-size: 13px;
   color: var(--ink-700);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .tool-btn:hover {
   background: var(--bg-sunken);

@@ -4,6 +4,7 @@ import { CursorOverlay } from "../../components/CursorOverlay";
 import { UserList } from "../../components/UserList";
 import { InvitePanel } from "../../components/InvitePanel";
 import { ChatPanel } from "../../components/ChatPanel";
+import { BackIcon, ChatIcon } from "../../components/icons";
 import { useBoardPage } from "./useBoardPage";
 
 export function BoardPage() {
@@ -44,8 +45,14 @@ export function BoardPage() {
     <div className="board-page">
       <div className="board-page-toolbar">
         <div className="board-title-group">
-          <button type="button" className="btn btn-ghost" onClick={goBack}>
-            &larr; Boards
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon"
+            onClick={goBack}
+            aria-label="Back to boards"
+            title="Back to boards"
+          >
+            <BackIcon />
           </button>
           <h2>{board?.name ?? "Loading board…"}</h2>
           <span className="connection-status">
@@ -65,7 +72,7 @@ export function BoardPage() {
         </div>
 
         <div className="board-presence">
-          <UserList members={onlineMembers} />
+          <UserList members={onlineMembers} currentUserId={userId ?? -1} />
           {board?.role === "owner" && (
             <button
               type="button"
@@ -77,10 +84,12 @@ export function BoardPage() {
           )}
           <button
             type="button"
-            className="btn btn-ghost"
+            className={`btn btn-ghost btn-icon ${showChat ? "btn-active" : ""}`}
             onClick={() => setShowChat((prev) => !prev)}
+            aria-label="Toggle chat"
+            title="Toggle chat"
           >
-            Chat
+            <ChatIcon />
           </button>
           <button
             type="button"
@@ -107,7 +116,7 @@ export function BoardPage() {
       {socketError && (
         <p className="form-error board-page-banner">
           {socketError}{" "}
-          <button type="button" className="btn btn-ghost btn-icon" onClick={clearSocketError}>
+          <button type="button" className="btn btn-ghost" onClick={clearSocketError}>
             Dismiss
           </button>
         </p>

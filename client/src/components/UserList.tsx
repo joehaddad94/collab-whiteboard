@@ -1,4 +1,5 @@
 import type { BoardRole } from "../types";
+import { Avatar } from "./Avatar";
 
 interface OnlineMember {
   userId: number;
@@ -8,9 +9,10 @@ interface OnlineMember {
 
 interface UserListProps {
   members: OnlineMember[];
+  currentUserId: number;
 }
 
-export function UserList({ members }: UserListProps) {
+export function UserList({ members, currentUserId }: UserListProps) {
   if (members.length === 0) {
     return <span className="board-presence-empty">No one else here yet</span>;
   }
@@ -19,7 +21,13 @@ export function UserList({ members }: UserListProps) {
     <>
       {members.map((m) => (
         <span key={m.userId} className="presence-chip">
-          {m.displayName}
+          <Avatar
+            name={m.displayName}
+            userId={m.userId}
+            size={18}
+            color={m.userId === currentUserId ? "var(--accent)" : undefined}
+          />
+          {m.userId === currentUserId ? "You" : m.displayName}
           {m.role && <span className="presence-chip-role">{m.role}</span>}
         </span>
       ))}

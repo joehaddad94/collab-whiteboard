@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Header } from "../../components/Header";
+import { BoardThumbnail } from "../../components/BoardThumbnail";
 import { useBoardListPage } from "./useBoardListPage";
 
 export function BoardListPage() {
@@ -52,6 +53,7 @@ export function BoardListPage() {
           <ul className="board-list">
             {boards.map((board) => (
               <li key={board.id} className="board-list-item">
+                <BoardThumbnail boardId={board.id} />
                 {renamingId === board.id ? (
                   <div className="board-rename-form">
                     <input
