@@ -3,7 +3,7 @@ import { ForbiddenError, NotFoundError, ValidationError } from "../../errors.js"
 import { findUserByEmail } from "../auth/auth.repository.js";
 import * as boardsRepository from "./boards.repository.js";
 import type { Role } from "./boards.repository.js";
-import type { Stroke } from "./boards.types.js";
+import { isValidStroke, type Stroke } from "./boards.types.js";
 
 function validateName(name: unknown): string {
   if (typeof name !== "string") {
@@ -91,8 +91,8 @@ export function deleteBoardForOwner(boardId: number, userId: number) {
 
 export function saveBoardData(boardId: number, userId: number, data: unknown) {
   requireMembership(boardId, userId);
-  if (!Array.isArray(data)) {
-    throw new ValidationError("data must be an array of strokes");
+  if (!Array.isArray(data) || !data.every(isValidStroke)) {
+    throw new ValidationError("data must be an array of valid strokes");
   }
   boardsRepository.updateBoardData(boardId, data as Stroke[]);
   return { id: boardId, data };

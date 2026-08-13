@@ -880,6 +880,23 @@ indefinitely, and its stale `connectedUsers` entry there would never clear.
 
 ---
 
+## ADR-025: Validate stroke shape in `PUT /:id/data`
+
+**Decision:** `boards.types.ts` gains `isValidStroke(value): value is Stroke`, checking
+every field (`id`, `userId`, `tool`, `color`, `brushSize`, and that `points` is an
+array of valid `{x,y}` objects). `boards.service.ts`'s `saveBoardData` now runs
+`data.every(isValidStroke)`, not just `Array.isArray(data)`, throwing
+`ValidationError` if any element fails.
+
+**Context:** Found during the backend audit: the save endpoint only checked the outer
+array, not its contents — inconsistent with the socket layer, which already validates
+every field on `stroke-start`. A client could `PUT` garbage elements that would then
+corrupt `board-joined`'s `strokes` payload for every future viewer of that board.
+
+**Trade-offs:** None — closes a real gap, no design ambiguity.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture
