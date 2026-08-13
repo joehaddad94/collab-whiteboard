@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
 import { createApp } from "./app.js";
 import { verifyToken } from "./middleware/auth.js";
+import { registerBoardHandlers } from "./sockets/board.js";
 import "./db/index.js";
 
 const app = createApp();
@@ -53,7 +54,7 @@ io.on("connection", (socket) => {
   // specific board — joined once per connection, not per board.
   socket.join(`user:${userId}`);
 
-  // Per-board join/leave and drawing events (ADR-017) are wired up in a later step.
+  registerBoardHandlers(io, socket);
 });
 
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
