@@ -15,7 +15,6 @@ export function BoardPage() {
     socket,
     connected,
     onlineMembers,
-    cursors,
     messages,
     sendMessage,
     socketError,
@@ -154,7 +153,7 @@ export function BoardPage() {
                 onRedo={redo}
                 onClear={requestClearBoard}
               />
-              <CursorOverlay cursors={cursors} />
+              <CursorOverlay socket={socket} />
             </>
           )}
         </div>

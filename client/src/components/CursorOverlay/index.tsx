@@ -1,13 +1,16 @@
 import type { CSSProperties } from "react";
-import type { CursorPosition } from "../types";
+import type { Socket } from "socket.io-client";
+import { useCursorOverlay } from "./useCursorOverlay";
 
 const CURSOR_COLORS = ["#ff6b4a", "#14b8a6", "#8b5cf6", "#f5a623"];
 
 interface CursorOverlayProps {
-  cursors: Record<number, CursorPosition>;
+  socket: Socket | null;
 }
 
-export function CursorOverlay({ cursors }: CursorOverlayProps) {
+export function CursorOverlay({ socket }: CursorOverlayProps) {
+  const cursors = useCursorOverlay(socket);
+
   return (
     <>
       {Object.values(cursors).map((cursor) => (
