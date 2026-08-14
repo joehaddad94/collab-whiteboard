@@ -345,24 +345,34 @@ a {
   flex-direction: column;
   transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
 }
-.board-list-item :is(.board-list-link, .board-rename-form, .board-list-actions) {
-  margin-left: 16px;
-  margin-right: 16px;
+.board-list-item:has(.board-list-link:hover) {
+  box-shadow: var(--shadow-md);
+  border-color: var(--ink-300);
+  transform: translateY(-1px);
 }
+
+/* The whole card (thumbnail + name/role) is one link, so the whole thing is
+   clickable - not just the name text. Rename/Delete stay outside it, since
+   buttons can't nest inside an <a>. */
 .board-list-link {
-  margin-top: 14px;
-  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
 }
-.board-list-link:last-child {
-  margin-bottom: 16px;
+.board-list-link-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 14px 16px 16px;
 }
-.board-rename-form {
-  margin-top: 14px;
-  margin-bottom: 16px;
+.board-name {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--ink-900);
 }
-.board-list-actions {
-  margin-bottom: 16px;
-}
+
 .board-thumb {
   height: 96px;
   background-color: var(--canvas-bg);
@@ -376,21 +386,7 @@ a {
   width: 100%;
   height: 100%;
 }
-.board-list-item:has(.board-list-link:hover) {
-  box-shadow: var(--shadow-md);
-  border-color: var(--ink-300);
-  transform: translateY(-1px);
-}
-.board-list-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  text-decoration: none;
-  color: var(--ink-900);
-  font-weight: 700;
-  font-size: 14.5px;
-}
+
 .board-role {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -407,10 +403,12 @@ a {
 .board-list-actions {
   display: flex;
   gap: 6px;
+  margin: 0 16px 16px;
 }
 .board-rename-form {
   display: flex;
   gap: 6px;
+  margin: 14px 16px 16px;
 }
 .board-rename-form input {
   flex: 1;

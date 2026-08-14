@@ -57,31 +57,36 @@ export function BoardListPage() {
           <ul className="board-list">
             {boards.map((board) => (
               <li key={board.id} className="board-list-item">
-                <BoardThumbnail boardId={board.id} />
                 {renamingId === board.id ? (
-                  <div className="board-rename-form">
-                    <input
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      autoFocus
-                      maxLength={100}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => handleRename(board.id)}
-                    >
-                      Save
-                    </button>
-                    <button type="button" className="btn btn-ghost" onClick={cancelRename}>
-                      Cancel
-                    </button>
-                  </div>
+                  <>
+                    <BoardThumbnail boardId={board.id} />
+                    <div className="board-rename-form">
+                      <input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        autoFocus
+                        maxLength={100}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => handleRename(board.id)}
+                      >
+                        Save
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={cancelRename}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <Link to={`/boards/${board.id}`} className="board-list-link">
-                      {board.name}
-                      <span className="board-role">{board.role}</span>
+                      <BoardThumbnail boardId={board.id} />
+                      <div className="board-list-link-info">
+                        <span className="board-name">{board.name}</span>
+                        <span className="board-role">{board.role}</span>
+                      </div>
                     </Link>
                     {board.role === "owner" && (
                       <div className="board-list-actions">
