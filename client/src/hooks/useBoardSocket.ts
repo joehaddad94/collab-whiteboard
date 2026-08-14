@@ -26,7 +26,10 @@ export function useBoardSocket(boardId: number) {
   useEffect(() => {
     if (!Number.isInteger(boardId)) return;
 
-    const socket = io(SOCKET_BASE, { withCredentials: true });
+    // Skip the default polling-then-upgrade handshake - go straight to
+    // WebSocket, since the server obviously supports it. Saves a round trip
+    // on every connect/reconnect for an app whose whole point is real-time feel.
+    const socket = io(SOCKET_BASE, { withCredentials: true, transports: ["websocket"] });
     setSocket(socket);
     setLeaveReason(null);
     setSocketError(null);
