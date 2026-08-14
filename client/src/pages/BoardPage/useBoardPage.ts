@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
 import { useAuth } from "../../hooks/useAuth";
@@ -93,7 +93,9 @@ export function useBoardPage() {
     setSaveStatus("saved");
   }, [boardId]);
 
-  function handleStrokesChange(strokes: Stroke[]) {
+  // useCallback here isn't optional cleanup - Whiteboard is memoized, and an
+  // unstable onStrokesChange reference would defeat that on every render.
+  const handleStrokesChange = useCallback((strokes: Stroke[]) => {
     boardStrokesRef.current = strokes;
     // The first strokes-change per board is the initial board-joined hydrate,
     // not a real edit - only mark unsaved for changes after that.
@@ -102,7 +104,7 @@ export function useBoardPage() {
       return;
     }
     setSaveStatus("unsaved");
-  }
+  }, []);
 
   async function save() {
     if (!Number.isInteger(boardId)) return;
@@ -117,17 +119,19 @@ export function useBoardPage() {
     }
   }
 
-  function undo() {
+  // Toolbar is memoized, so these need stable identity too - same reasoning
+  // as handleStrokesChange above.
+  const undo = useCallback(() => {
     socket?.emit("undo");
-  }
+  }, [socket]);
 
-  function redo() {
+  const redo = useCallback(() => {
     socket?.emit("redo");
-  }
+  }, [socket]);
 
-  function requestClearBoard() {
+  const requestClearBoard = useCallback(() => {
     setShowClearConfirm(true);
-  }
+  }, []);
 
   function confirmClearBoard() {
     setShowClearConfirm(false);
@@ -138,11 +142,15 @@ export function useBoardPage() {
     setShowClearConfirm(false);
   }
 
-  const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
-  const onlineMembers = connectedUsers.map((u) => ({
-    ...u,
-    role: roleByUserId.get(u.userId),
-  }));
+  // UserList is memoized - without useMemo this allocates a new array every
+  // render (even ones unrelated to presence/membership), which would defeat it.
+  const onlineMembers = useMemo(() => {
+    const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
+    return connectedUsers.map((u) => ({
+      ...u,
+      role: roleByUserId.get(u.userId),
+    }));
+  }, [connectedUsers, members]);
 
   return {
     board,

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Tool } from "../types";
 import { PenIcon, EraserIcon, UndoIcon, RedoIcon, ClearIcon } from "./icons";
 
@@ -17,7 +18,7 @@ interface ToolbarProps {
   onClear: () => void;
 }
 
-export function Toolbar({
+export const Toolbar = memo(function Toolbar({
   tool,
   onToolChange,
   color,
@@ -95,4 +96,4 @@ export function Toolbar({
       </button>
     </div>
   );
-}
+});

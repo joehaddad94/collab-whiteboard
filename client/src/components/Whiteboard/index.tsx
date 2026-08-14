@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Socket } from "socket.io-client";
 import type { Stroke, Tool } from "../../types";
 import { useWhiteboard } from "./useWhiteboard";
@@ -11,7 +12,7 @@ interface WhiteboardProps {
   onStrokesChange?: (strokes: Stroke[]) => void;
 }
 
-export function Whiteboard({
+export const Whiteboard = memo(function Whiteboard({
   userId,
   tool,
   color,
@@ -33,4 +34,4 @@ export function Whiteboard({
       />
     </div>
   );
-}
+});

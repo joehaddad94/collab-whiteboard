@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { BoardRole } from "../types";
 import { Avatar } from "./Avatar";
 
@@ -12,7 +13,7 @@ interface UserListProps {
   currentUserId: number;
 }
 
-export function UserList({ members, currentUserId }: UserListProps) {
+export const UserList = memo(function UserList({ members, currentUserId }: UserListProps) {
   if (members.length === 0) {
     return <span className="board-presence-empty">No one else here yet</span>;
   }
@@ -33,4 +34,4 @@ export function UserList({ members, currentUserId }: UserListProps) {
       ))}
     </>
   );
-}
+});
