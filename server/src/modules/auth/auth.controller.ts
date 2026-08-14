@@ -22,7 +22,7 @@ export async function signup(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function login(req: AuthenticatedRequest, res: Response) {
-  const result = await authService.login(req.body?.username, req.body?.password);
+  const result = await authService.login(req.body?.identifier, req.body?.password);
   res.cookie("token", result.token, COOKIE_OPTIONS);
   res.json({ id: result.id, email: result.email, username: result.username });
 }

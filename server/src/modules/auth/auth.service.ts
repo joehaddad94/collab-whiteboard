@@ -76,14 +76,16 @@ export async function signup(
 }
 
 export async function login(
-  rawUsername: unknown,
+  rawIdentifier: unknown,
   rawPassword: unknown,
 ): Promise<AuthResult> {
-  if (typeof rawUsername !== "string" || typeof rawPassword !== "string") {
+  if (typeof rawIdentifier !== "string" || typeof rawPassword !== "string") {
     throw new UnauthorizedError("Invalid credentials");
   }
 
-  const user = findUserByUsername(rawUsername);
+  const user =
+    findUserByEmail(rawIdentifier.toLowerCase()) ??
+    findUserByUsername(rawIdentifier);
   if (!user || !(await bcrypt.compare(rawPassword, user.password_hash))) {
     throw new UnauthorizedError("Invalid credentials");
   }
