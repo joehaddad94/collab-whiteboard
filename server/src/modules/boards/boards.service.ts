@@ -64,12 +64,11 @@ export function getBoardForUser(boardId: number, userId: number) {
     throw new NotFoundError("Board not found");
   }
 
-  const { invite_code, ...boardFields } = board;
+  const { invite_code: _inviteCode, ...boardFields } = board;
   return {
     ...boardFields,
     data: JSON.parse(board.data) as Stroke[],
     role: membership.role,
-    ...(membership.role === "owner" ? { inviteCode: invite_code } : {}),
   };
 }
 
@@ -163,30 +162,4 @@ export function removeMember(
   }
 
   boardsRepository.deleteMembership(boardId, targetUserId);
-}
-
-export function regenerateInviteLink(boardId: number, userId: number) {
-  requireOwner(boardId, userId);
-  const newCode = generateInviteCode();
-  boardsRepository.updateInviteCode(boardId, newCode);
-  return newCode;
-}
-
-export function joinByInviteCode(code: string, userId: number) {
-  const board = boardsRepository.findBoardIdByInviteCode(code);
-  if (!board) {
-    throw new NotFoundError("Invalid invite code");
-  }
-
-  const existing = boardsRepository.findMembership(board.id, userId);
-  if (existing) {
-    return { boardId: board.id, role: existing.role, alreadyMember: true };
-  }
-
-  boardsRepository.insertMembership(board.id, userId, "editor");
-  return {
-    boardId: board.id,
-    role: "editor" as Role,
-    alreadyMember: false,
-  };
 }

@@ -132,17 +132,3 @@ export function deleteMembership(boardId: number, userId: number): void {
   ).run(boardId, userId);
 }
 
-export function updateInviteCode(boardId: number, code: string): void {
-  db.prepare("UPDATE Board SET invite_code = ? WHERE id = ?").run(
-    code,
-    boardId,
-  );
-}
-
-export function findBoardIdByInviteCode(
-  code: string,
-): { id: number } | undefined {
-  return db
-    .prepare("SELECT id FROM Board WHERE invite_code = ?")
-    .get(code) as { id: number } | undefined;
-}

@@ -16,10 +16,6 @@ function parseId(
   return id;
 }
 
-function paramString(raw: string | string[] | undefined): string {
-  return Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "");
-}
-
 export function list(req: AuthenticatedRequest, res: Response) {
   res.json(boardsService.listBoardsForUser(req.user!.userId));
 }
@@ -82,21 +78,4 @@ export function removeMember(req: AuthenticatedRequest, res: Response) {
   boardsService.removeMember(boardId, req.user!.userId, targetUserId);
   evictUserFromBoard(boardId, targetUserId);
   res.status(204).send();
-}
-
-export function regenerateInviteLink(req: AuthenticatedRequest, res: Response) {
-  const boardId = parseId(req.params.id);
-  const inviteCode = boardsService.regenerateInviteLink(
-    boardId,
-    req.user!.userId,
-  );
-  res.json({ inviteCode });
-}
-
-export function join(req: AuthenticatedRequest, res: Response) {
-  const { alreadyMember, ...body } = boardsService.joinByInviteCode(
-    paramString(req.params.code),
-    req.user!.userId,
-  );
-  res.status(alreadyMember ? 200 : 201).json(body);
 }
