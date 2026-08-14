@@ -23,7 +23,7 @@ export function CursorOverlay({ cursors }: CursorOverlayProps) {
           }
         >
           <span className="cursor-flag-tip" />
-          <span className="cursor-flag-tag">{cursor.displayName}</span>
+          <span className="cursor-flag-tag">{cursor.username}</span>
         </div>
       ))}
     </>

@@ -56,15 +56,15 @@ async function request<T>(
 
 export const api = {
   auth: {
-    signup: (email: string, password: string, displayName: string) =>
+    signup: (email: string, password: string, username: string) =>
       request<User>("/api/auth/signup", {
         method: "POST",
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ email, password, username }),
       }),
-    login: (email: string, password: string) =>
+    login: (username: string, password: string) =>
       request<User>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
     me: () =>
@@ -96,7 +96,7 @@ export const api = {
       }),
     listMembers: (id: number) => request<BoardMember[]>(`/api/boards/${id}/members`),
     inviteMember: (id: number, email: string) =>
-      request<{ userId: number; displayName: string; role: BoardMember["role"] }>(
+      request<{ userId: number; username: string; role: BoardMember["role"] }>(
         `/api/boards/${id}/members`,
         { method: "POST", body: JSON.stringify({ email }) },
       ),

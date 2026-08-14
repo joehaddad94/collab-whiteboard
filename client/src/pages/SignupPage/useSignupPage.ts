@@ -4,6 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { ApiRequestError } from "../../hooks/useApi";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_PATTERN = /^[a-zA-Z0-9]{3,20}$/;
 
 export function useSignupPage() {
   const { signup } = useAuth();
@@ -11,7 +12,7 @@ export function useSignupPage() {
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/boards";
   const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -24,8 +25,8 @@ export function useSignupPage() {
       setError("Enter a valid email address.");
       return;
     }
-    if (displayName.trim().length === 0) {
-      setError("Display name is required.");
+    if (!USERNAME_PATTERN.test(username)) {
+      setError("Username must be 3-20 letters or numbers, no spaces or symbols.");
       return;
     }
     if (password.length < 8) {
@@ -35,7 +36,7 @@ export function useSignupPage() {
 
     setSubmitting(true);
     try {
-      await signup(email, password, displayName.trim());
+      await signup(email, password, username);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Signup failed");
@@ -47,8 +48,8 @@ export function useSignupPage() {
   return {
     email,
     setEmail,
-    displayName,
-    setDisplayName,
+    username,
+    setUsername,
     password,
     setPassword,
     error,

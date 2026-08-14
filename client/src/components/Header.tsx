@@ -14,8 +14,8 @@ export function Header() {
       </Link>
       {user && (
         <div className="app-header-user">
-          <Avatar name={user.displayName} userId={user.id} color="var(--accent)" />
-          <span>{user.displayName}</span>
+          <Avatar name={user.username} userId={user.id} color="var(--accent)" />
+          <span>{user.username}</span>
           <button type="button" className="btn btn-ghost" onClick={() => void logout()}>
             Log out
           </button>

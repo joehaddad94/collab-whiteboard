@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   email: string;
-  displayName: string;
+  username: string;
 }
 
 export type BoardRole = "owner" | "editor";
@@ -46,19 +46,19 @@ export interface ApiError {
 
 export interface ConnectedUser {
   userId: number;
-  displayName: string;
+  username: string;
 }
 
 export interface CursorPosition {
   userId: number;
-  displayName: string;
+  username: string;
   x: number;
   y: number;
 }
 
 export interface BoardMember {
   userId: number;
-  displayName: string;
+  username: string;
   role: BoardRole;
 }
 
@@ -66,7 +66,7 @@ export interface ChatMessage {
   id: number;
   boardId: number;
   userId: number;
-  displayName: string;
+  username: string;
   text: string;
   createdAt: string;
 }

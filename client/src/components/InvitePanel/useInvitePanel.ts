@@ -29,7 +29,7 @@ export function useInvitePanel({
     setInviteMessage(null);
     try {
       const result = await api.boards.inviteMember(boardId, trimmed);
-      setInviteMessage(`${result.displayName} added as ${result.role}`);
+      setInviteMessage(`${result.username} added as ${result.role}`);
       setEmail("");
     } catch (err) {
       setInviteError(err instanceof ApiRequestError ? err.message : "Failed to invite");

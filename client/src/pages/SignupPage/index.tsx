@@ -6,8 +6,8 @@ export function SignupPage() {
   const {
     email,
     setEmail,
-    displayName,
-    setDisplayName,
+    username,
+    setUsername,
     password,
     setPassword,
     error,
@@ -35,11 +35,11 @@ export function SignupPage() {
           />
         </label>
         <label>
-          Display name
+          Username
           <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            autoComplete="name"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
             required
           />
         </label>

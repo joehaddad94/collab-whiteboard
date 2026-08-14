@@ -4,8 +4,8 @@ import { useLoginPage } from "./useLoginPage";
 
 export function LoginPage() {
   const {
-    email,
-    setEmail,
+    username,
+    setUsername,
     password,
     setPassword,
     error,
@@ -23,12 +23,12 @@ export function LoginPage() {
         <h1>Log in</h1>
         {error && <p className="form-error">{error}</p>}
         <label>
-          Email
+          Username
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
             required
           />
         </label>

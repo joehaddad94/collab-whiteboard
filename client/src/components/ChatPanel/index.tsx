@@ -39,11 +39,11 @@ export function ChatPanel({ messages, currentUserId, onSend, onClose }: ChatPane
         ) : (
           messages.map((m) => (
             <div key={m.id} className="chat-msg">
-              <Avatar name={m.displayName} userId={m.userId} size={24} />
+              <Avatar name={m.username} userId={m.userId} size={24} />
               <div className="chat-msg-body">
                 <div className="chat-msg-who">
                   <span className="chat-msg-name">
-                    {m.userId === currentUserId ? "You" : m.displayName}
+                    {m.userId === currentUserId ? "You" : m.username}
                   </span>
                   <span className="chat-msg-time">{formatTime(m.createdAt)}</span>
                 </div>
