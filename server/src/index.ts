@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import cookieParser from "cookie-parser";
 import { createApp } from "./app.js";
 import { verifyToken } from "./middleware/auth.js";
+import { findUserById } from "./modules/auth/auth.repository.js";
 import { registerBoardHandlers } from "./sockets/board.js";
 import { setIo } from "./sockets/realtime.js";
 import "./db/index.js";
@@ -32,7 +33,13 @@ io.use((socket, next) => {
   }
 
   try {
-    socket.data.user = verifyToken(token);
+    const { userId } = verifyToken(token);
+    const user = findUserById(userId);
+    if (!user) {
+      next(new Error("Not authenticated"));
+      return;
+    }
+    socket.data.user = { userId: user.id, username: user.username };
     next();
   } catch {
     next(new Error("Not authenticated"));
