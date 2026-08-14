@@ -54,7 +54,7 @@ export function createBoard(userId: number, rawName: unknown) {
   const inviteCode = generateInviteCode();
   const boardId = boardsRepository.insertBoard(name, userId, inviteCode);
   boardsRepository.insertMembership(boardId, userId, "owner");
-  return boardsRepository.findBoardSummaryById(boardId);
+  return getBoardForUser(boardId, userId);
 }
 
 export function getBoardForUser(boardId: number, userId: number) {
@@ -80,7 +80,7 @@ export function renameBoard(
   requireOwner(boardId, userId);
   const name = validateName(rawName);
   boardsRepository.updateBoardName(boardId, name);
-  return boardsRepository.findBoardSummaryById(boardId);
+  return getBoardForUser(boardId, userId);
 }
 
 export function deleteBoardForOwner(boardId: number, userId: number) {
