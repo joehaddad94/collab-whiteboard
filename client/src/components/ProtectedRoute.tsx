@@ -6,9 +6,8 @@ export function ProtectedRoute() {
   const location = useLocation();
 
   if (loading) return <div className="page-loading">Loading…</div>;
-  // Preserve the destination (e.g. /join/:code) so login/signup can send the
-  // user back where they were headed - an invite link is the main case this
-  // matters for, since the recipient often isn't logged in yet.
+  // Preserve the destination so login/signup can send the user back where
+  // they were headed instead of always landing on /boards.
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return <Outlet />;
