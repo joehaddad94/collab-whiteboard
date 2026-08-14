@@ -21,7 +21,6 @@ export interface BoardDetail {
   created_at: string;
   updated_at: string;
   role: BoardRole;
-  inviteCode?: string;
 }
 
 export type Tool = "pen" | "eraser";

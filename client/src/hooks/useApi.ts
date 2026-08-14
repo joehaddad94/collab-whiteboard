@@ -100,15 +100,6 @@ export const api = {
         `/api/boards/${id}/members`,
         { method: "POST", body: JSON.stringify({ email }) },
       ),
-    regenerateInviteLink: (id: number) =>
-      request<{ inviteCode: string }>(`/api/boards/${id}/invite-link/regenerate`, {
-        method: "POST",
-      }),
-    joinByCode: (code: string) =>
-      request<{ boardId: number; role: BoardMember["role"] }>(
-        `/api/boards/join/${code}`,
-        { method: "POST" },
-      ),
   },
 };
 

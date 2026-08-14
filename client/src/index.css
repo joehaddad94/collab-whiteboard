@@ -560,21 +560,6 @@ a {
 .invite-feedback-error {
   color: var(--danger);
 }
-.invite-link-row {
-  display: flex;
-  gap: 8px;
-}
-.invite-link-row input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-sunken);
-  color: var(--ink-600);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
 .dialog-overlay {
   position: fixed;
   inset: 0;
@@ -853,8 +838,7 @@ a {
     width: 48px;
   }
 
-  .invite-email-form,
-  .invite-link-row {
+  .invite-email-form {
     flex-wrap: wrap;
   }
 }

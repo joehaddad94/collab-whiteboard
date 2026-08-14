@@ -139,10 +139,6 @@ export function useBoardPage() {
     setShowClearConfirm(false);
   }
 
-  function updateInviteCode(code: string) {
-    setBoard((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-  }
-
   const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
   const onlineMembers = connectedUsers.map((u) => ({
     ...u,
@@ -181,7 +177,6 @@ export function useBoardPage() {
     showClearConfirm,
     showInvitePanel,
     setShowInvitePanel,
-    updateInviteCode,
     showChat,
     setShowChat,
   };

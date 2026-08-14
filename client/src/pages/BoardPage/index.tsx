@@ -40,7 +40,6 @@ export function BoardPage() {
     showClearConfirm,
     showInvitePanel,
     setShowInvitePanel,
-    updateInviteCode,
     showChat,
     setShowChat,
   } = useBoardPage();
@@ -107,12 +106,7 @@ export function BoardPage() {
       </div>
 
       {showInvitePanel && board && (
-        <InvitePanel
-          boardId={board.id}
-          inviteCode={board.inviteCode}
-          onInviteCodeChange={updateInviteCode}
-          onClose={() => setShowInvitePanel(false)}
-        />
+        <InvitePanel boardId={board.id} onClose={() => setShowInvitePanel(false)} />
       )}
 
       {showClearConfirm && (

@@ -3,30 +3,12 @@ import { useInvitePanel } from "./useInvitePanel";
 
 interface InvitePanelProps {
   boardId: number;
-  inviteCode?: string;
-  onInviteCodeChange: (code: string) => void;
   onClose: () => void;
 }
 
-export function InvitePanel({
-  boardId,
-  inviteCode,
-  onInviteCodeChange,
-  onClose,
-}: InvitePanelProps) {
-  const {
-    email,
-    setEmail,
-    inviting,
-    inviteMessage,
-    inviteError,
-    handleInvite,
-    regenerating,
-    handleRegenerate,
-    inviteLink,
-    copied,
-    handleCopy,
-  } = useInvitePanel({ boardId, inviteCode, onInviteCodeChange });
+export function InvitePanel({ boardId, onClose }: InvitePanelProps) {
+  const { email, setEmail, inviting, inviteMessage, inviteError, handleInvite } =
+    useInvitePanel({ boardId });
 
   return (
     <div className="invite-panel">
@@ -60,31 +42,6 @@ export function InvitePanel({
       </form>
       {inviteMessage && <p className="invite-feedback invite-feedback-success">{inviteMessage}</p>}
       {inviteError && <p className="invite-feedback invite-feedback-error">{inviteError}</p>}
-
-      <div className="invite-link-row">
-        <input
-          type="text"
-          readOnly
-          value={inviteLink ?? ""}
-          onFocus={(e) => e.target.select()}
-        />
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => void handleCopy()}
-          disabled={!inviteLink}
-        >
-          {copied ? "Copied!" : "Copy link"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => void handleRegenerate()}
-          disabled={regenerating}
-        >
-          {regenerating ? "Regenerating…" : "Regenerate"}
-        </button>
-      </div>
     </div>
   );
 }
