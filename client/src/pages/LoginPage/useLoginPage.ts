@@ -8,7 +8,7 @@ export function useLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/boards";
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -18,7 +18,7 @@ export function useLoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(username, password);
+      await login(identifier, password);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Login failed");
@@ -28,8 +28,8 @@ export function useLoginPage() {
   }
 
   return {
-    username,
-    setUsername,
+    identifier,
+    setIdentifier,
     password,
     setPassword,
     error,

@@ -61,10 +61,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ email, password, username }),
       }),
-    login: (username: string, password: string) =>
+    login: (identifier: string, password: string) =>
       request<User>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ identifier, password }),
       }),
     logout: () => request<void>("/api/auth/logout", { method: "POST" }),
     me: () =>
