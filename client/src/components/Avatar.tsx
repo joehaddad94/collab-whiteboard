@@ -1,6 +1,7 @@
 const AVATAR_COLORS = ["#2454ff", "#ff6b4a", "#14b8a6", "#f5a623", "#8b5cf6"];
 
-function getInitials(name: string): string {
+function getInitials(name: string | undefined | null): string {
+  if (!name) return "?";
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -21,7 +22,7 @@ export function Avatar({ name, userId, size = 26, color }: AvatarProps) {
     <span
       className="avatar"
       style={{ width: size, height: size, fontSize: size * 0.42, background }}
-      title={name}
+      title={name || "Unknown user"}
     >
       {getInitials(name)}
     </span>
