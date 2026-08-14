@@ -15,15 +15,16 @@ entries are not rewritten after the fact.
 
 ---
 
-## Status (updated 2026-08-13)
+## Status (updated 2026-08-14)
 
 ### Backend — done, feature-complete
 - Project skeleton: TypeScript, `node:sqlite`, `db/schema.sql`, `.env`/`.env.example` (ADR-011–014)
-- Auth: signup/login/logout/me, email + `displayName` (not username), JWT httpOnly
-  cookie, auth middleware, Socket.io handshake auth, async bcrypt (ADR-008/015/022/027)
+- Auth: signup/login/logout/me, email + `username` (login is username-only, not
+  email — ADR-031), JWT httpOnly cookie, auth middleware, Socket.io handshake auth,
+  async bcrypt (ADR-008/015/022/027/031)
 - Board CRUD REST routes: list/create/get/rename/delete/save (ADR-016)
-- Membership REST routes: list/invite-by-email/remove, invite-link regenerate/join
-  (ADR-009/016/022)
+- Membership REST routes: list/invite-by-email/remove (ADR-009/016/022; invite-link
+  regenerate/join removed in ADR-031 — not in the requirements)
 - Socket.io — full contract: `join-board`/`leave-board` + presence, streamed drawing
   events (`stroke-start`/`stroke-point`/`stroke-end`), `clear-board`, per-user
   `undo`/`redo`, `cursor-move` → `cursor-update`, and `chat-message` with history
@@ -42,12 +43,15 @@ entries are not rewritten after the fact.
 ### Frontend — done, feature-complete
 Built via a separate Claude Code conversation working task-by-task against this
 backend, each piece tested live against the running server before moving on (see
-ADR-030). Auth (email/`displayName`, matching ADR-022), board list CRUD, `BoardPage`
-with a live socket connection (`useBoardSocket`), `Whiteboard` canvas with full
-real-time drawing sync, `Toolbar`, undo/redo/clear, cursor presence overlay,
-save/load to REST, `UserList` with roles, the invite/join flow (`InvitePanel` +
-`JoinBoardPage`), and `ChatPanel`. Styled against the previously-approved UX mockup.
-An automated test suite is not part of this — same deliberate gap as the backend.
+ADR-030). Auth (email + `username`, login is username-only — ADR-031), board list
+CRUD, `BoardPage` with a live socket connection (`useBoardSocket`), `Whiteboard`
+canvas with full real-time drawing sync, `Toolbar`, undo/redo/clear (behind a real
+`ConfirmDialog`, not a native browser `confirm()`), cursor presence overlay,
+save/load to REST, `UserList` with roles, invite-by-email (`InvitePanel` — the
+invite-link half and `JoinBoardPage` were removed in ADR-031), and `ChatPanel`.
+Styled against the previously-approved UX mockup, including a responsive breakpoint
+for narrow screens. An automated test suite is not part of this — same deliberate
+gap as the backend.
 
 ### Not started at all
 - README (setup, running locally, REST/WebSocket API docs, assumptions, technical
@@ -1068,6 +1072,143 @@ fallback UI actually rendering on a real thrown error — both needed, and got, 
 manual check.
 
 **Trade-offs:** None beyond what's already accepted in ADR-018.
+
+---
+
+## ADR-030b: Post-review UI/UX pass
+
+**Decision:** A round of fixes prompted by direct user review of the built app
+rather than by comparing against the mockup or requirements text:
+- **Icons, avatars, board thumbnails** — everything in ADR-030 used plain text
+  labels/chips to move fast on function; ported the mockup's inline SVG icon set
+  (`icons.tsx`), initials-in-a-circle `Avatar` (deterministic color per `userId`,
+  same palette `CursorOverlay` already used), and per-board decorative
+  `BoardThumbnail` doodles, closing a real visual gap against what was approved.
+- **`ConfirmDialog` replaces native `confirm()`** — clearing a board and deleting
+  a board both used the browser's native dialog, which breaks the app's own design
+  language on every other action. Both now use one styled modal component
+  (overlay + card, Escape/click-outside to cancel).
+- **Responsive breakpoint added** — the challenge brief requires responsive
+  design, and there were zero `@media` rules anywhere. `BoardPage`'s header
+  wraps instead of overflowing, the chat panel becomes a full-screen overlay
+  instead of squeezing the canvas to nothing, and the floating toolbar scrolls
+  horizontally instead of clipping, all at `max-width: 720px`.
+- **Board card click target fixed** — the `<Link>` only wrapped the name/role
+  text, not the thumbnail; restructured so the whole card (minus Rename/Delete,
+  which can't nest inside an `<a>`) is one link.
+
+**Context:** All four came directly from Joe reviewing the running app rather
+than from a code-level audit, which is why they land after ADR-030 instead of
+being folded into it.
+
+**Trade-offs:** None beyond what's already accepted upstream (ADR-010 for icons
+not needing a library, ADR-018 for plain CSS over a framework).
+
+---
+
+## ADR-031: `username` replaces `displayName`; login by username only; invite-link removed
+
+**Decision:** Two changes, both driven by re-reading the challenge requirements
+literally against what had been built.
+
+**1. `display_name` renamed to `username` at the database level, login is
+username + password only (no email login).** The requirements ask for "a
+unique username or display name" — ADR-022 had satisfied this with a real
+auth system (email + password + `displayName`) where `displayName` itself
+was never enforced unique and never used to log in, which reads as a
+stretch of the literal requirement. Rather than add a third field, the
+existing `display_name` column becomes `username`:
+- Renamed through every layer that touched it: `schema.sql`, the auth
+  repository/service/controller, the JWT payload, board membership listing,
+  chat messages, socket presence/cursor/user-joined events, and every
+  frontend type/component that read `displayName`.
+- Enforced unique via a case-insensitive index
+  (`CREATE UNIQUE INDEX idx_user_username_nocase ON User(username COLLATE
+  NOCASE)`) plus an application-level check at signup for a clean error
+  message — same belt-and-suspenders pattern as any other uniqueness
+  check in this codebase.
+- Validation reverted to the original pre-ADR-022 pattern (3-20
+  alphanumeric characters) since it's a login credential again, not a
+  free-text display label.
+- Email is still collected and still unique at signup (kept for the
+  account record), it's just no longer a valid login identifier.
+
+**DB migration:** `schema.sql`'s `CREATE TABLE IF NOT EXISTS` doesn't
+retroactively alter an existing table (ADR-012), so the live dev database
+needed an explicit, one-time `ALTER TABLE User RENAME COLUMN display_name
+TO username` run directly against `data/whiteboard.sqlite` — a real
+column rename, not a drop/recreate, so existing accounts and their data
+were preserved. This is exactly the kind of one-off schema change ADR-012
+anticipated not having tooling for; a single manual `ALTER` was the right
+scale of solution rather than introducing a migration framework for it.
+
+**Alternatives considered:**
+- **Add a separate `username` field alongside `displayName`** — rejected:
+  two names per account (one for login, one for display) is more surface
+  area than the requirement asks for, and invites the two drifting out of
+  sync with no clear reason for a user to want that.
+- **Keep login accepting both email and username** — considered as a
+  middle ground, but the explicit ask was to close the "not just email"
+  gap, and having exactly one login identifier is simpler to explain than
+  "either works."
+
+**2. Invite-link removed — not in the requirements.** `POST
+/:id/invite-link/regenerate`, `POST /join/:code`, `JoinBoardPage`, and the
+`/join/:code` route are all gone (ADR-009's second entry path). Invite-by-
+email (`POST /:id/members`) is unaffected and is now the only way to add
+a member to a board. `Board.invite_code` stays in
+the schema and is still generated on board creation (it's a `NOT NULL
+UNIQUE` column), just never read or exposed via the API anymore — removing
+the column itself would mean rebuilding the table (SQLite can't drop a
+column that's part of a `UNIQUE` constraint without one), which is more
+schema risk than justified for a column that's now simply inert.
+
+**Context:** Both changes came from directly comparing the "User
+Management" requirement text against the implementation, prompted by a
+requirements walkthrough rather than a bug report.
+
+**Trade-offs:** Existing session cookies issued before the `username`
+rename decode to `{ userId, displayName }`; any such session now reads as
+`user.username === undefined` until the holder logs in again (a 7-day-old
+JWT at worst, and nothing production-critical depends on it not
+happening). No pagination or accept/reject flow was ever built for the
+link-based join path (ADR-009 already scoped that out), so removing it
+loses no other functionality.
+
+---
+
+## ADR-032: Centralized error handling for socket event handlers
+
+**Decision:** Wrap every socket event handler in `sockets/board.ts` with a
+`withErrorHandling()` higher-order function that catches synchronously,
+emits the existing generic `error { message }` event back to the sender
+(`AppError` subclasses surface their real message; anything else gets a
+generic "Something went wrong" so internals don't leak), and logs
+server-side. Mirrors the centralized Express error handler (ADR-021) on
+the socket side.
+
+**Context:** Prompted by directly auditing the "Error Handling" requirement
+rather than a reported bug. Before this, only `chat-message` had a
+try/catch of its own (ADR-029); every other handler — `join-board`,
+`stroke-start`/`stroke-point`/`stroke-end`, `clear-board`, `undo`, `redo`,
+`cursor-move`, `leave-board`, `disconnect` — had none, and there was no
+process-level `uncaughtException` handler either. An unexpected throw
+(a DB error, anything not already caught by the explicit validation
+checks already in each handler) would have propagated as an uncaught
+exception and crashed the whole process — taking the server down for
+every connected client, not just the one whose action triggered it.
+
+**Alternatives considered:**
+- **A `process.on('uncaughtException')` safety net instead** — rejected as
+  the sole fix: it can stop the process from dying, but by then the
+  triggering client has no idea their action failed, and Node's own docs
+  advise against treating it as a substitute for handling errors at the
+  point they occur, since process state after an uncaught exception is
+  not reliably safe to keep running on.
+
+**Trade-offs:** None - this only adds a safety net around paths that were
+already expected to either succeed or fail through the explicit checks
+already in place; it doesn't change any handler's normal-path behavior.
 
 ---
 
