@@ -6,9 +6,19 @@ import express, {
 } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { load as loadYaml } from "js-yaml";
+import swaggerUi, { type JsonObject } from "swagger-ui-express";
 import authRouter from "./modules/auth/auth.routes.js";
 import boardsRouter from "./modules/boards/boards.routes.js";
 import { AppError } from "./errors.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const openApiSpec = loadYaml(
+  readFileSync(join(__dirname, "../openapi.yaml"), "utf-8"),
+) as JsonObject;
 
 const errorHandler: ErrorRequestHandler = (
   err: unknown,
@@ -39,6 +49,8 @@ export function createApp() {
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
   app.use("/api/auth", authRouter);
   app.use("/api/boards", boardsRouter);

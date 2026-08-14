@@ -1,0 +1,566 @@
+openapi: 3.0.3
+info:
+  title: Collab Whiteboard API
+  version: 1.0.0
+  description: |
+    REST API for the collaborative whiteboard app. Real-time drawing, cursors,
+    presence, undo/redo, and chat happen over Socket.io, not REST - see
+    `server/README.md` for the WebSocket event reference, since OpenAPI has
+    no way to describe those.
+
+    Authentication is a JWT stored in an httpOnly cookie named `token`, set by
+    signup/login. The same cookie authenticates both REST requests and the
+    Socket.io handshake. There is no `Authorization` header - the cookie is
+    sent automatically by the browser (or by any HTTP client configured to
+    persist cookies) on every request to this API's origin.
+servers:
+  - url: http://localhost:4000
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Boards
+  - name: Membership
+
+security:
+  - cookieAuth: []
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, username]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                username:
+                  type: string
+                  description: 3-20 letters or numbers, no spaces or symbols. Unique, case-insensitive.
+                  pattern: "^[a-zA-Z0-9]{3,20}$"
+              example:
+                email: ana@example.com
+                password: password123
+                username: ana_dev
+      responses:
+        "201":
+          description: Account created, session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid email, password, or username
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Email or username already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  description: Not email - see the note on this API's authentication.
+                password:
+                  type: string
+              example:
+                username: ana_dev
+                password: password123
+      responses:
+        "200":
+          description: Logged in, session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: |
+            Invalid credentials - the same generic message is returned for an
+            unknown username and a wrong password, to avoid confirming which
+            usernames exist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Log out
+      security: []
+      description: Clears the session cookie. Safe to call even if not logged in.
+      responses:
+        "204":
+          description: Logged out
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the current session's user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/boards:
+    get:
+      tags: [Boards]
+      summary: List boards the current user is a member of
+      responses:
+        "200":
+          description: Board summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BoardSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Boards]
+      summary: Create a board
+      description: The creator automatically becomes the board's owner.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+              example:
+                name: Product roadmap Q3
+      responses:
+        "201":
+          description: Board created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardDetail"
+        "400":
+          description: Invalid board name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/boards/{id}:
+    parameters:
+      - $ref: "#/components/parameters/BoardId"
+    get:
+      tags: [Boards]
+      summary: Get a board
+      description: Includes the current strokes (`data`). Non-members get 404, not 403 - membership isn't confirmed to exist to a non-member.
+      responses:
+        "200":
+          description: Board detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Board doesn't exist, or the current user isn't a member of it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    patch:
+      tags: [Boards]
+      summary: Rename a board
+      description: Owner only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "200":
+          description: Renamed board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardDetail"
+        "400":
+          description: Invalid board name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          $ref: "#/components/responses/BoardNotFound"
+    delete:
+      tags: [Boards]
+      summary: Delete a board
+      description: Owner only. Cascades to memberships and chat history. Also evicts any currently-connected sockets from the board's room.
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          $ref: "#/components/responses/BoardNotFound"
+
+  /api/boards/{id}/data:
+    parameters:
+      - $ref: "#/components/parameters/BoardId"
+    put:
+      tags: [Boards]
+      summary: Save the board's drawing
+      description: |
+        Any member (not just the owner) can save. Replaces the entire strokes
+        array - this is the explicit "Save" action; it's unrelated to the
+        live real-time sync, which happens over Socket.io and never touches
+        the database per-stroke.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Stroke"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Stroke"
+        "400":
+          description: data is not a valid array of strokes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/BoardNotFound"
+
+  /api/boards/{id}/members:
+    parameters:
+      - $ref: "#/components/parameters/BoardId"
+    get:
+      tags: [Membership]
+      summary: List a board's members
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BoardMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/BoardNotFound"
+    post:
+      tags: [Membership]
+      summary: Invite a user to the board by email
+      description: |
+        Owner only. Adds the target user as an `editor` immediately - there's
+        no pending/accept step. Idempotent if they're already a member
+        (returns 200 instead of 201, no duplicate row).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "201":
+          description: Added as a new member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardMember"
+        "200":
+          description: Already a member (no-op)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoardMember"
+        "400":
+          description: Missing email, or inviting yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Board not found, or no account exists with that email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/boards/{id}/members/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/BoardId"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      tags: [Membership]
+      summary: Remove a member from the board
+      description: Owner only. The owner themself can't be removed this way.
+      responses:
+        "204":
+          description: Removed. Also evicts that user's currently-connected socket from the board's room.
+        "400":
+          description: Attempted to remove the board owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Board not found, or the target user isn't a member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: JWT set as an httpOnly cookie by signup/login.
+
+  parameters:
+    BoardId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    Unauthorized:
+      description: No valid session cookie
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    BoardNotFound:
+      description: Board doesn't exist, or the current user isn't a member of it
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      example:
+        error: Invalid credentials
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+      example:
+        id: 1
+        email: ana@example.com
+        username: ana_dev
+
+    BoardRole:
+      type: string
+      enum: [owner, editor]
+
+    BoardSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        updated_at:
+          type: string
+        role:
+          $ref: "#/components/schemas/BoardRole"
+
+    BoardDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        owner_id:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Stroke"
+        created_at:
+          type: string
+        updated_at:
+          type: string
+        role:
+          $ref: "#/components/schemas/BoardRole"
+
+    BoardMember:
+      type: object
+      properties:
+        userId:
+          type: integer
+        username:
+          type: string
+        role:
+          $ref: "#/components/schemas/BoardRole"
+
+    Point:
+      type: object
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+
+    Stroke:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: integer
+        tool:
+          type: string
+          enum: [pen, eraser]
+        color:
+          type: string
+        brushSize:
+          type: number
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/Point"
