@@ -609,6 +609,7 @@ a {
 }
 
 .board-canvas-area {
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
@@ -805,4 +806,55 @@ a {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* ---------- responsive (narrow screens) ---------- */
+@media (max-width: 720px) {
+  .app-header {
+    padding: 0 12px;
+  }
+  .app-header-user span {
+    display: none;
+  }
+
+  .board-page-toolbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 12px;
+    row-gap: 8px;
+  }
+  .board-title-group {
+    flex: 1 1 100%;
+  }
+  .board-presence {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* Side-by-side chat stops working once the canvas has no room left to
+     give up - become a full-screen overlay instead. */
+  .chat-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 5;
+    border-left: none;
+  }
+
+  /* The floating toolbar is wider than a phone screen with every control
+     visible at once - let it scroll horizontally instead of overflowing
+     off the edges or getting clipped. */
+  .toolbar {
+    max-width: calc(100% - 24px);
+    overflow-x: auto;
+  }
+  .brush-size input[type="range"] {
+    width: 48px;
+  }
+
+  .invite-email-form,
+  .invite-link-row {
+    flex-wrap: wrap;
+  }
 }
