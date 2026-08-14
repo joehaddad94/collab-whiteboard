@@ -1212,6 +1212,38 @@ already in place; it doesn't change any handler's normal-path behavior.
 
 ---
 
+## ADR-033: Login accepts username or email, not username only
+
+**Decision:** `POST /api/auth/login` now takes `{ identifier, password }`
+instead of `{ username, password }`. The server tries
+`findUserByEmail(identifier.toLowerCase())` first, falling back to
+`findUserByUsername(identifier)` if that misses. No format sniffing is
+needed to pick which lookup to try — usernames are alphanumeric-only and
+never contain `@`, while emails always do — but trying both means either
+one works regardless. Updated on the client: `useApi`, `useAuth`, and
+`LoginPage` all rename `username` to `identifier`, and the form label
+reads "Username or email".
+
+**Context:** Reported directly by a user who forgot which of their
+username or email they signed up with and got locked out. Reverses part
+of ADR-031, which had deliberately made login username-only on the
+reasoning that email "isn't a login identifier" — that trade-off turned
+out to cost real users a way back into their account with no recovery
+flow (no password reset exists) to fall back on.
+
+**Alternatives considered:**
+- **Keep username-only, add password reset instead** — a more complete
+  fix for "I forgot how to log in" in general, but out of scope for what
+  was actually reported, and doesn't help a user who also doesn't
+  remember which identifier they used.
+
+**Trade-offs:** None functionally — this only widens what the same single
+field accepts. Two lookups (`findUserByEmail` then `findUserByUsername`)
+run on unrecognized input instead of one, which is negligible at this
+scale and on unique-indexed columns.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

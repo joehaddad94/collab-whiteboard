@@ -100,15 +100,15 @@ paths:
           application/json:
             schema:
               type: object
-              required: [username, password]
+              required: [identifier, password]
               properties:
-                username:
+                identifier:
                   type: string
-                  description: Not email - see the note on this API's authentication.
+                  description: Either a username or an email address.
                 password:
                   type: string
               example:
-                username: ana_dev
+                identifier: ana_dev
                 password: password123
       responses:
         "200":
@@ -120,8 +120,8 @@ paths:
         "401":
           description: |
             Invalid credentials - the same generic message is returned for an
-            unknown username and a wrong password, to avoid confirming which
-            usernames exist.
+            unknown identifier and a wrong password, to avoid confirming which
+            usernames or emails exist.
           content:
             application/json:
               schema:

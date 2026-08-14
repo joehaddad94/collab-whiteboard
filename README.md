@@ -111,5 +111,6 @@ log to maintain.
 **Authentication** — real accounts (email + password + a unique username),
 not just a display name, since the challenge overview lists authentication
 as core rather than optional. JWT in an httpOnly cookie is the single
-credential shared by REST and the Socket.io handshake. Login is by username,
-not email — email is collected and unique but isn't a login identifier.
+credential shared by REST and the Socket.io handshake. Login accepts either
+username or email as the identifier, since users forget which one they
+signed up with.

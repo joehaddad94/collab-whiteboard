@@ -53,7 +53,7 @@ Everything below is a summary — that's the authoritative reference.
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | POST | `/api/auth/signup` | — | `{ email, password, username }` |
-| POST | `/api/auth/login` | — | `{ username, password }` — **username, not email** |
+| POST | `/api/auth/login` | — | `{ identifier, password }` — identifier is a username or email |
 | POST | `/api/auth/logout` | — | Clears the session cookie |
 | GET | `/api/auth/me` | session | Current user |
 | GET | `/api/boards` | session | Boards the user is a member of |
@@ -71,9 +71,9 @@ Conventions worth knowing before you poke at this with curl/Postman:
   not a member of returns 404, same as one that doesn't exist at all. 403 is
   reserved for "you can see it, you're a member, you just can't do *this*"
   (e.g. a non-owner trying to rename).
-- **Login never confirms whether a username exists** — wrong username and
-  wrong password both return the same generic 401, to prevent account
-  enumeration.
+- **Login never confirms whether an identifier exists** — an unknown
+  username/email and a wrong password both return the same generic 401, to
+  prevent account enumeration.
 - **Inviting an existing member is a no-op, not an error** — returns 200
   instead of 201 with the same body, rather than a conflict.
 
