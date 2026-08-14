@@ -40,11 +40,11 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  const { userId, displayName } = socket.data.user as {
+  const { userId, username } = socket.data.user as {
     userId: number;
-    displayName: string;
+    username: string;
   };
-  console.log("socket connected:", socket.id, displayName);
+  console.log("socket connected:", socket.id, username);
 
   socket.join(`user:${userId}`);
 

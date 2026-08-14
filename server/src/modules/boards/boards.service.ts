@@ -127,7 +127,7 @@ export function inviteMember(
   if (existing) {
     return {
       userId: targetUser.id,
-      displayName: targetUser.display_name,
+      username: targetUser.username,
       role: existing.role,
       alreadyMember: true,
     };
@@ -136,7 +136,7 @@ export function inviteMember(
   boardsRepository.insertMembership(boardId, targetUser.id, "editor");
   return {
     userId: targetUser.id,
-    displayName: targetUser.display_name,
+    username: targetUser.username,
     role: "editor" as Role,
     alreadyMember: false,
   };

@@ -12,7 +12,7 @@ const JWT_SECRET: string = (() => {
 
 export interface AuthTokenPayload {
   userId: number;
-  displayName: string;
+  username: string;
 }
 
 export function signToken(payload: AuthTokenPayload): string {

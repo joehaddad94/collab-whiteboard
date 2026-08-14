@@ -1,10 +1,12 @@
 CREATE TABLE IF NOT EXISTS User (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
-  display_name TEXT NOT NULL,
+  username TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_username_nocase ON User(username COLLATE NOCASE);
 
 CREATE TABLE IF NOT EXISTS Board (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

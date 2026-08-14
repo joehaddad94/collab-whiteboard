@@ -9,7 +9,7 @@ export interface ChatMessage {
   id: number;
   boardId: number;
   userId: number;
-  displayName: string;
+  username: string;
   text: string;
   createdAt: string;
 }
@@ -19,7 +19,7 @@ function toChatMessage(row: ChatMessageRow): ChatMessage {
     id: row.id,
     boardId: row.board_id,
     userId: row.user_id,
-    displayName: row.display_name,
+    username: row.username,
     text: row.text,
     createdAt: row.created_at,
   };

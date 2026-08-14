@@ -13,18 +13,18 @@ export async function signup(req: AuthenticatedRequest, res: Response) {
   const result = await authService.signup(
     req.body?.email,
     req.body?.password,
-    req.body?.displayName,
+    req.body?.username,
   );
   res.cookie("token", result.token, COOKIE_OPTIONS);
   res
     .status(201)
-    .json({ id: result.id, email: result.email, displayName: result.displayName });
+    .json({ id: result.id, email: result.email, username: result.username });
 }
 
 export async function login(req: AuthenticatedRequest, res: Response) {
-  const result = await authService.login(req.body?.email, req.body?.password);
+  const result = await authService.login(req.body?.username, req.body?.password);
   res.cookie("token", result.token, COOKIE_OPTIONS);
-  res.json({ id: result.id, email: result.email, displayName: result.displayName });
+  res.json({ id: result.id, email: result.email, username: result.username });
 }
 
 export function logout(_req: AuthenticatedRequest, res: Response) {

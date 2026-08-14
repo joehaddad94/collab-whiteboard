@@ -4,7 +4,7 @@ export interface ChatMessageRow {
   id: number;
   board_id: number;
   user_id: number;
-  display_name: string;
+  username: string;
   text: string;
   created_at: string;
 }
@@ -24,7 +24,7 @@ export function findMessageById(id: number): ChatMessageRow | undefined {
   return db
     .prepare(
       `SELECT ChatMessage.id, ChatMessage.board_id, ChatMessage.user_id,
-              User.display_name, ChatMessage.text, ChatMessage.created_at
+              User.username, ChatMessage.text, ChatMessage.created_at
        FROM ChatMessage
        JOIN User ON User.id = ChatMessage.user_id
        WHERE ChatMessage.id = ?`,
@@ -39,7 +39,7 @@ export function findRecentMessagesForBoard(
   return db
     .prepare(
       `SELECT ChatMessage.id, ChatMessage.board_id, ChatMessage.user_id,
-              User.display_name, ChatMessage.text, ChatMessage.created_at
+              User.username, ChatMessage.text, ChatMessage.created_at
        FROM ChatMessage
        JOIN User ON User.id = ChatMessage.user_id
        WHERE ChatMessage.board_id = ?

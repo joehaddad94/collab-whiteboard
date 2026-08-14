@@ -34,7 +34,7 @@ export interface MembershipRow {
 
 export interface MemberRow {
   userId: number;
-  displayName: string;
+  username: string;
   role: Role;
 }
 
@@ -117,11 +117,11 @@ export function deleteBoard(boardId: number): void {
 export function findMembersForBoard(boardId: number): MemberRow[] {
   return db
     .prepare(
-      `SELECT User.id AS userId, User.display_name AS displayName, BoardMember.role
+      `SELECT User.id AS userId, User.username, BoardMember.role
        FROM BoardMember
        JOIN User ON User.id = BoardMember.user_id
        WHERE BoardMember.board_id = ?
-       ORDER BY BoardMember.role, User.display_name`,
+       ORDER BY BoardMember.role, User.username`,
     )
     .all(boardId) as unknown as MemberRow[];
 }

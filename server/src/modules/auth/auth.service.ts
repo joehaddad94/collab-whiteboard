@@ -9,23 +9,24 @@ import {
 import {
   findUserByEmail,
   findUserById,
+  findUserByUsername,
   insertUser,
 } from "./auth.repository.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DISPLAY_NAME_MAX_LENGTH = 50;
+const USERNAME_RE = /^[a-zA-Z0-9]{3,20}$/;
 
 export interface AuthResult {
   id: number;
   email: string;
-  displayName: string;
+  username: string;
   token: string;
 }
 
 export interface Profile {
   id: number;
   email: string;
-  displayName: string;
+  username: string;
 }
 
 function validateEmail(email: unknown): string {
@@ -42,57 +43,56 @@ function validatePassword(password: unknown): string {
   return password;
 }
 
-function validateDisplayName(displayName: unknown): string {
-  if (typeof displayName !== "string") {
-    throw new ValidationError("Display name is required");
-  }
-  const trimmed = displayName.trim();
-  if (trimmed.length === 0 || trimmed.length > DISPLAY_NAME_MAX_LENGTH) {
+function validateUsername(username: unknown): string {
+  if (typeof username !== "string" || !USERNAME_RE.test(username)) {
     throw new ValidationError(
-      `Display name must be 1-${DISPLAY_NAME_MAX_LENGTH} characters`,
+      "Username must be 3-20 letters or numbers, no spaces or symbols",
     );
   }
-  return trimmed;
+  return username;
 }
 
 export async function signup(
   rawEmail: unknown,
   rawPassword: unknown,
-  rawDisplayName: unknown,
+  rawUsername: unknown,
 ): Promise<AuthResult> {
   const email = validateEmail(rawEmail);
   const password = validatePassword(rawPassword);
-  const displayName = validateDisplayName(rawDisplayName);
+  const username = validateUsername(rawUsername);
 
   if (findUserByEmail(email)) {
     throw new ConflictError("An account with this email already exists");
   }
+  if (findUserByUsername(username)) {
+    throw new ConflictError("That username is already taken");
+  }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const id = insertUser(email, passwordHash, displayName);
-  const token = signToken({ userId: id, displayName });
+  const id = insertUser(email, passwordHash, username);
+  const token = signToken({ userId: id, username });
 
-  return { id, email, displayName, token };
+  return { id, email, username, token };
 }
 
 export async function login(
-  rawEmail: unknown,
+  rawUsername: unknown,
   rawPassword: unknown,
 ): Promise<AuthResult> {
-  if (typeof rawEmail !== "string" || typeof rawPassword !== "string") {
+  if (typeof rawUsername !== "string" || typeof rawPassword !== "string") {
     throw new UnauthorizedError("Invalid credentials");
   }
 
-  const user = findUserByEmail(rawEmail.toLowerCase());
+  const user = findUserByUsername(rawUsername);
   if (!user || !(await bcrypt.compare(rawPassword, user.password_hash))) {
     throw new UnauthorizedError("Invalid credentials");
   }
 
-  const token = signToken({ userId: user.id, displayName: user.display_name });
+  const token = signToken({ userId: user.id, username: user.username });
   return {
     id: user.id,
     email: user.email,
-    displayName: user.display_name,
+    username: user.username,
     token,
   };
 }
@@ -102,5 +102,5 @@ export function getProfile(userId: number): Profile {
   if (!user) {
     throw new NotFoundError("User not found");
   }
-  return { id: user.id, email: user.email, displayName: user.display_name };
+  return { id: user.id, email: user.email, username: user.username };
 }
