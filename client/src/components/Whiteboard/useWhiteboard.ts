@@ -65,6 +65,10 @@ export function useWhiteboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strokes]);
 
+  // Redraws every stroke the board currently has, including the unfinished
+  // ones: a stroke being drawn right now is real to everyone watching it, so
+  // a redraw that dropped it would blank out live strokes on every resize,
+  // undo, or join.
   function redrawAll() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -72,6 +76,10 @@ export function useWhiteboard({
     const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     for (const stroke of strokesRef.current) drawStroke(ctx, stroke);
+    for (const stroke of remoteInProgressRef.current.values()) {
+      drawStroke(ctx, stroke);
+    }
+    if (currentStrokeRef.current) drawStroke(ctx, currentStrokeRef.current);
   }
 
   function resizeCanvas() {
@@ -102,9 +110,22 @@ export function useWhiteboard({
   useEffect(() => {
     if (!socket) return;
 
-    function handleBoardJoined(payload: { strokes: Stroke[] }) {
+    function handleBoardJoined(payload: {
+      strokes: Stroke[];
+      inProgressStrokes?: Stroke[];
+    }) {
       strokesRef.current = payload.strokes;
       setStrokes(payload.strokes);
+      // Seed the strokes other people are still drawing, so the stroke-point /
+      // stroke-end events that follow (which carry only a strokeId) have
+      // something to attach to. Points are copied because they're mutated in
+      // place as more arrive.
+      remoteInProgressRef.current = new Map(
+        (payload.inProgressStrokes ?? []).map((stroke) => [
+          stroke.id,
+          { ...stroke, points: [...stroke.points] },
+        ]),
+      );
       redrawAll();
     }
 
@@ -142,6 +163,9 @@ export function useWhiteboard({
     // stroke can't be expressed as an incremental draw, so all three force a
     // full redraw from the updated state.
     function handleStrokeRemoved({ strokeId }: { strokeId: string }) {
+      // Also covers a stroke abandoned mid-draw by someone who disconnected:
+      // the server sends the same event for it, and it's still unfinished here.
+      remoteInProgressRef.current.delete(strokeId);
       const next = strokesRef.current.filter((s) => s.id !== strokeId);
       strokesRef.current = next;
       setStrokes(next);
@@ -158,6 +182,9 @@ export function useWhiteboard({
     function handleBoardCleared() {
       strokesRef.current = [];
       setStrokes([]);
+      // The server drops its in-progress strokes on clear too, so anything
+      // still unfinished here will never get another point or an end event.
+      remoteInProgressRef.current.clear();
       redrawAll();
     }
 

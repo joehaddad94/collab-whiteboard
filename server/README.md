@@ -123,14 +123,14 @@ there's no separate WS-level login step.
 
 | Event | Payload | Notes |
 |---|---|---|
-| `board-joined` | `{ strokes, users, messages }` | Full current state, sent only to you in reply to `join-board`. Also what a reconnect resyncs from — there's no "replay missed events," every join/rejoin gets the complete current state. |
+| `board-joined` | `{ strokes, inProgressStrokes, users, messages }` | Full current state, sent only to you in reply to `join-board`. `inProgressStrokes` are strokes other people are drawing *right now* — they aren't in `strokes` yet, and the `stroke-point`/`stroke-end` events that follow carry only a `strokeId`, so a client joining mid-stroke needs them to have anything to attach those to. Also what a reconnect resyncs from — there's no "replay missed events," every join/rejoin gets the complete current state. |
 | `user-joined` | `{ userId, username }` | Broadcast to the room when someone else joins. |
 | `user-left` | `{ userId }` | Broadcast on `leave-board` or disconnect. |
 | `stroke-start` | full stroke object | Rebroadcast to everyone *except* the sender. |
 | `stroke-point` | `{ strokeId, point }` | Rebroadcast, sender excluded. |
 | `stroke-end` | `{ strokeId }` | Rebroadcast, sender excluded. |
 | `board-cleared` | — | Broadcast to the **whole room including the sender**. |
-| `stroke-removed` | `{ strokeId }` | Undo result. Whole room including sender. |
+| `stroke-removed` | `{ strokeId }` | Undo result. Whole room including sender. Also sent when someone disconnects mid-stroke, to drop the unfinished fragment that will never get an end event. |
 | `stroke-restored` | `{ stroke }` | Redo result. Whole room including sender. |
 | `cursor-update` | `{ userId, username, x, y }` | Rebroadcast, sender excluded. |
 | `chat-message` | `{ id, boardId, userId, username, text, createdAt }` | Whole room including the sender — there's no optimistic local echo on the frontend, it just waits for this like everyone else. |

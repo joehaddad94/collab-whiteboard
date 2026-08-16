@@ -84,8 +84,14 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         username: user.username,
       });
 
+      // inProgressStrokes is part of the join snapshot, not just `strokes`:
+      // a stroke someone is still drawing right now isn't in `strokes` yet,
+      // and its later stroke-point/stroke-end events carry only a strokeId -
+      // so without it a client that joins mid-stroke has nothing to attach
+      // those to and never sees that stroke at all.
       socket.emit("board-joined", {
         strokes: session.strokes,
+        inProgressStrokes: Array.from(session.inProgressStrokes.values()),
         users: Array.from(session.connectedUsers.values()),
         messages: chatService.getRecentMessages(boardId),
       });
@@ -299,16 +305,26 @@ function leaveBoard(socket: Socket, boardId: number) {
   const session = getSession(boardId);
 
   session?.connectedUsers.delete(socket.id);
+
+  const abandonedStrokeIds: string[] = [];
   if (session) {
     for (const [strokeId, stroke] of session.inProgressStrokes) {
       if (stroke.userId === user.userId) {
         session.inProgressStrokes.delete(strokeId);
+        abandonedStrokeIds.push(strokeId);
       }
     }
   }
   socket.leave(roomName);
   if (socket.data.currentBoardId === boardId) {
     socket.data.currentBoardId = undefined;
+  }
+
+  // A stroke dropped mid-draw never reaches `strokes`, so the room has to be
+  // told to drop it too - otherwise it sits on every other canvas as a
+  // fragment that can't be finished, undone, or redrawn away.
+  for (const strokeId of abandonedStrokeIds) {
+    socket.to(roomName).emit("stroke-removed", { strokeId });
   }
 
   socket.to(roomName).emit("user-left", { userId: user.userId });
