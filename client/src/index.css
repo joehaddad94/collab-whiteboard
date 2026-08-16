@@ -600,13 +600,14 @@ a {
   min-height: 0;
 }
 
+/* The paper look lives on .whiteboard-page, not here - this is just the
+   surround, and it needs to read as "not the board" so the margin beside a
+   page that doesn't match the window's shape doesn't look drawable. */
 .board-canvas-region {
   position: relative;
   flex: 1;
   min-width: 0;
-  background-color: var(--canvas-bg);
-  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
-  background-size: 18px 18px;
+  background-color: var(--bg-sunken);
 }
 
 .chat-panel {
@@ -749,6 +750,15 @@ a {
   accent-color: var(--accent);
 }
 
+/* Covers exactly the same box as the canvas - useCursorOverlay measures it to
+   recover the world -> screen transform. */
+.cursor-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .cursor-flag {
   position: absolute;
   display: flex;
@@ -783,6 +793,18 @@ a {
   width: 100%;
   height: 100%;
   touch-action: none;
+}
+
+/* Positioned from JS - it tracks the fixed-aspect board scaled to fit the
+   container, which is the same rect the canvas clips its drawing to. */
+.whiteboard-page {
+  position: absolute;
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1px);
+  background-size: 18px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .whiteboard-container canvas {

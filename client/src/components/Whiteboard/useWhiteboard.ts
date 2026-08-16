@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { Socket } from "socket.io-client";
 import type { Point, Stroke, Tool } from "../../types";
+import {
+  WORLD_HEIGHT,
+  WORLD_WIDTH,
+  getViewTransform,
+  screenToWorld,
+  type ViewTransform,
+} from "../../lib/worldView";
 
 interface UseWhiteboardOptions {
   userId: number;
@@ -13,6 +20,9 @@ interface UseWhiteboardOptions {
 
 const CURSOR_THROTTLE_MS = 40;
 
+// Stroke coordinates and brushSize are in world units (see worldView), and the
+// canvas context carries the world -> device transform, so this draws them
+// as-is and the scaling happens for free.
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.points.length === 0) return;
   ctx.globalCompositeOperation =
@@ -53,8 +63,12 @@ export function useWhiteboard({
   const remoteInProgressRef = useRef<Map<string, Stroke>>(new Map());
   const strokesRef = useRef<Stroke[]>([]);
   const lastCursorEmitRef = useRef(0);
+  const viewRef = useRef<ViewTransform>(getViewTransform(0, 0));
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
+  // Only used to position the page rect in the markup - drawing and hit-testing
+  // read viewRef, so a resize doesn't have to wait for a render to be correct.
+  const [view, setView] = useState<ViewTransform>(() => getViewTransform(0, 0));
 
   useEffect(() => {
     strokesRef.current = strokes;
@@ -73,8 +87,14 @@ export function useWhiteboard({
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+    // Clear in device space - the context is carrying the world transform, and
+    // the backing store is the one thing whose size is known in device pixels.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
     for (const stroke of strokesRef.current) drawStroke(ctx, stroke);
     for (const stroke of remoteInProgressRef.current.values()) {
       drawStroke(ctx, stroke);
@@ -88,10 +108,33 @@ export function useWhiteboard({
     if (!canvas || !container) return;
     const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
+
+    // Assigning width/height wipes the whole context state - transform and
+    // clip included - so both have to be re-established below, every time.
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
+
+    const nextView = getViewTransform(rect.width, rect.height);
+    viewRef.current = nextView;
+    setView(nextView);
+
     const ctx = canvas.getContext("2d");
-    ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (ctx) {
+      ctx.setTransform(
+        dpr * nextView.scale,
+        0,
+        0,
+        dpr * nextView.scale,
+        dpr * nextView.offsetX,
+        dpr * nextView.offsetY,
+      );
+      // Clip to the page so a stroke that runs off the edge is cut off
+      // identically for everyone, instead of existing only for whoever's
+      // window happens to have spare room beside it.
+      ctx.beginPath();
+      ctx.rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+      ctx.clip();
+    }
     redrawAll();
   }
 
@@ -210,7 +253,10 @@ export function useWhiteboard({
 
   function getPoint(e: { clientX: number; clientY: number }): Point {
     const rect = canvasRef.current!.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    return screenToWorld(
+      { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      viewRef.current,
+    );
   }
 
   function handlePointerDown(e: PointerEvent<HTMLCanvasElement>) {
@@ -270,6 +316,7 @@ export function useWhiteboard({
   return {
     containerRef,
     canvasRef,
+    view,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
