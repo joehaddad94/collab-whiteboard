@@ -29,7 +29,7 @@ export const Whiteboard = memo(function Whiteboard({
   return (
     <div
       ref={containerRef}
-      className={`whiteboard-container ${disabled ? "is-disabled" : ""}`}
+      className={`whiteboard-container tool-${tool} ${disabled ? "is-disabled" : ""}`}
     >
       {/* The drawable surface is a fixed-aspect page scaled to fit, so it
           needs to be visible - otherwise the margin beside it on a window

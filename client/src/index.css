@@ -871,6 +871,28 @@ a {
   touch-action: none;
 }
 
+/* The cursor is the tool you're holding. Both glyphs are the same paths the
+   toolbar buttons draw, so the pointer and the button that selected it are
+   recognisably the same object - filled white with a dark outline, which stays
+   legible on the light page and on the dark surround alike. The hotspot is the
+   working end in each case: the pen's nib, the eraser's rubbing edge. */
+.whiteboard-container.tool-pen canvas {
+  cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M4 20l1-4L16 5l3 3L8 19l-4 1Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/><path d='M4 20l1-4L16 5l3 3L8 19l-4 1Z' fill='%23ffffff' stroke='%231b1d22' stroke-width='1.8' stroke-linejoin='round'/></svg>")
+      4 20,
+    crosshair;
+}
+
+.whiteboard-container.tool-eraser canvas {
+  cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M18 13 8 3 3 8l9 9M8 21h11' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round' stroke-linecap='round'/><path d='M18 13 8 3 3 8l9 9Z' fill='%23ffffff' stroke='%231b1d22' stroke-width='1.8' stroke-linejoin='round'/><path d='M8 21h11' fill='none' stroke='%231b1d22' stroke-width='1.8' stroke-linecap='round'/></svg>")
+      7 13,
+    cell;
+}
+
+/* pointer-events:none on the canvas means its own cursor never applies, so the
+   paused state has to be declared on the container instead. */
+.whiteboard-container.is-disabled {
+  cursor: not-allowed;
+}
 .whiteboard-container.is-disabled canvas {
   pointer-events: none;
 }
