@@ -67,14 +67,31 @@ export const Toolbar = memo(function Toolbar({
 
       <div className="toolbar-sep" />
 
-      <label className="brush-size">
+      {/* The dot is the label: it's drawn at the actual brush size, in the
+          actual colour, so what the slider controls is visible rather than
+          something you have to infer from a bare track. */}
+      <label className="brush-size" title={`Brush size — ${brushSize}px`}>
+        <span className="brush-preview" aria-hidden="true">
+          <span
+            className={`brush-preview-dot ${tool === "eraser" ? "is-eraser" : ""}`}
+            style={{
+              width: brushSize,
+              height: brushSize,
+              background: tool === "eraser" ? undefined : color,
+            }}
+          />
+        </span>
         <input
           type="range"
           min={MIN_BRUSH_SIZE}
           max={MAX_BRUSH_SIZE}
           value={brushSize}
           onChange={(e) => onBrushSizeChange(Number(e.target.value))}
+          aria-label="Brush size"
         />
+        <span className="brush-value" aria-hidden="true">
+          {brushSize}
+        </span>
       </label>
 
       <div className="toolbar-sep" />

@@ -819,11 +819,47 @@ a {
 .brush-size {
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 0 8px;
+  cursor: pointer;
 }
 .brush-size input[type="range"] {
   width: 68px;
   accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Fixed box so the slider never shifts as the dot inside it grows. */
+.brush-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.brush-preview-dot {
+  border-radius: 50%;
+  transition: width 0.12s ease, height 0.12s ease, background 0.12s ease;
+}
+/* An eraser doesn't lay down colour, so it previews as an outline - showing it
+   filled in the current pen colour would say the opposite of what it does. */
+.brush-preview-dot.is-eraser {
+  background: transparent;
+  border: 1.5px solid var(--ink-400);
+}
+
+/* Mono, and a fixed 2-character box: "2" and "22" then occupy the same width,
+   so nothing in the toolbar moves while you drag. */
+.brush-value {
+  width: 2ch;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-400);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Covers exactly the same box as the canvas - useCursorOverlay measures it to
