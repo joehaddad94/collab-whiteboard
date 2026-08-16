@@ -34,7 +34,7 @@ export const UserList = memo(function UserList({ members, currentUserId }: UserL
               color={isSelf ? "var(--accent)" : undefined}
             />
             {isSelf ? "You" : m.username}
-            {m.role && <span className="presence-chip-role">{m.role}</span>}
+            {m.role && <span className="role-badge">{m.role}</span>}
           </span>
         );
       })}

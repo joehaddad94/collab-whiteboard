@@ -2,6 +2,10 @@ import { Link } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { BoardThumbnail } from "../../components/BoardThumbnail";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import {
+  formatAbsoluteTime,
+  formatRelativeTime,
+} from "../../lib/formatRelativeTime";
 import { useBoardListPage } from "./useBoardListPage";
 
 export function BoardListPage() {
@@ -85,21 +89,32 @@ export function BoardListPage() {
                       <BoardThumbnail boardId={board.id} />
                       <div className="board-list-link-info">
                         <span className="board-name">{board.name}</span>
-                        <span className="board-role">{board.role}</span>
+                        <span className="board-meta">
+                          <span className="role-badge">{board.role}</span>
+                          {/* The list is ordered by updated_at, so showing it
+                              explains the order rather than leaving it to
+                              look arbitrary. */}
+                          <time
+                            dateTime={board.updated_at}
+                            title={formatAbsoluteTime(board.updated_at)}
+                          >
+                            {formatRelativeTime(board.updated_at)}
+                          </time>
+                        </span>
                       </div>
                     </Link>
                     {board.role === "owner" && (
                       <div className="board-list-actions">
                         <button
                           type="button"
-                          className="btn btn-ghost"
+                          className="btn btn-ghost btn-sm"
                           onClick={() => startRename(board)}
                         >
                           Rename
                         </button>
                         <button
                           type="button"
-                          className="btn btn-ghost btn-danger"
+                          className="btn btn-ghost btn-danger btn-sm"
                           onClick={() => requestDelete(board.id)}
                         >
                           Delete
