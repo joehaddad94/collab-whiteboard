@@ -3,10 +3,9 @@ import { getSession } from "./boardSessions.js";
 import { getIo } from "./realtime.js";
 
 // Live strokes live in the board session and only reach the database when
-// something writes them. Leaving that entirely to a Save button meant a board
+// something writes them. That used to be a Save button, which meant a board
 // everyone closed without pressing it lost the work outright - so the server
-// now persists its own session, and Save is a "write it now" shortcut rather
-// than the only path.
+// persists its own session instead, and there's nothing for anyone to press.
 //
 // Debounced rather than per-event: strokes land continuously while people
 // draw, and a write per stroke would rewrite the whole row constantly for no
@@ -39,7 +38,7 @@ export function markBoardDirty(boardId: number): void {
   pendingSaves.set(boardId, { timer, deadline });
 }
 
-export function saveBoardNow(boardId: number): boolean {
+function saveBoardNow(boardId: number): boolean {
   cancelPendingSave(boardId);
 
   const session = getSession(boardId);

@@ -9,11 +9,7 @@ import {
   listUniqueUsers,
   removeSessionIfEmpty,
 } from "./boardSessions.js";
-import {
-  flushPendingSave,
-  markBoardDirty,
-  saveBoardNow,
-} from "./boardAutosave.js";
+import { flushPendingSave, markBoardDirty } from "./boardAutosave.js";
 import type { Stroke } from "../modules/boards/boards.types.js";
 
 function isValidPoint(point: unknown): point is { x: number; y: number } {
@@ -278,17 +274,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
 
       markBoardDirty(active.boardId);
       io.to(active.roomName).emit("stroke-restored", { stroke });
-    }),
-  );
-
-  // Autosave already writes the board on a debounce; this is the Save button
-  // asking for it now rather than in a second or two.
-  socket.on(
-    "save-board",
-    withErrorHandling(socket, () => {
-      const active = activeSession();
-      if (!active) return;
-      saveBoardNow(active.boardId);
     }),
   );
 

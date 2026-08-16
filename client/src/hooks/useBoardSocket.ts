@@ -106,10 +106,6 @@ export function useBoardSocket(boardId: number) {
     socket?.emit("chat-message", { text });
   }
 
-  function requestSave() {
-    socket?.emit("save-board");
-  }
-
   return {
     socket,
     connected,
@@ -118,7 +114,6 @@ export function useBoardSocket(boardId: number) {
     messages,
     sendMessage,
     lastSavedAt,
-    requestSave,
     leaveReason,
     socketError,
     clearSocketError,

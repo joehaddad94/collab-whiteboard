@@ -21,8 +21,6 @@ export function BoardPage() {
     socketError,
     clearSocketError,
     saveStatus,
-    saveError,
-    save,
     handleStrokesChange,
     userId,
     goBack,
@@ -66,11 +64,7 @@ export function BoardPage() {
             <span
               className={`dot ${saveStatus === "unsaved" ? "dot-pending" : "dot-success"}`}
             />
-            {saveStatus === "saving"
-              ? "Saving…"
-              : saveStatus === "unsaved"
-                ? "Unsaved changes"
-                : "Saved"}
+            {saveStatus === "unsaved" ? "Unsaved changes" : "Saved"}
           </span>
         </div>
 
@@ -94,14 +88,6 @@ export function BoardPage() {
           >
             <ChatIcon />
           </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={save}
-            disabled={saveStatus === "saving" || !connected}
-          >
-            {saveStatus === "saving" ? "Saving…" : "Save"}
-          </button>
         </div>
       </div>
 
@@ -121,7 +107,6 @@ export function BoardPage() {
       )}
 
       {loadError && <p className="form-error board-page-banner">{loadError}</p>}
-      {saveError && <p className="form-error board-page-banner">{saveError}</p>}
       {socketError && (
         <p className="form-error board-page-banner">
           {socketError}{" "}

@@ -41,9 +41,9 @@ Full setup details, environment variables, and scripts:
   everyone on the board, not just visible after a refresh
 - Live cursors and presence — see who's connected and where their cursor is
 - Per-user undo/redo and a whole-board Clear
-- Save/load — the server autosaves a board as it changes, and flushes when
-  the last person leaves, so work isn't lost by forgetting to save; Save
-  writes immediately. It reloads exactly as saved
+- Save/load — no Save button: the server autosaves a board as it changes and
+  flushes when the last person leaves, so work can't be lost by forgetting.
+  A board reloads exactly as it was left
 - Real-time per-board chat, with history
 - Invite collaborators by email (Owner/Editor roles)
 - Real authentication (signup/login/logout, not just a display name)

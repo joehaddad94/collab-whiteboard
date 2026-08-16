@@ -7,9 +7,8 @@ import type { BoardDetail, BoardMember, Tool } from "../../types";
 
 const DEFAULT_COLOR = "#1b1d22";
 const DEFAULT_BRUSH_SIZE = 4;
-const SAVE_CONFIRM_TIMEOUT_MS = 8000;
 
-export type SaveStatus = "saved" | "unsaved" | "saving";
+export type SaveStatus = "saved" | "unsaved";
 
 export function useBoardPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,9 +25,7 @@ export function useBoardPage() {
   const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
 
   const hasHydratedRef = useRef(false);
-  const saveTimeoutRef = useRef<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -42,7 +39,6 @@ export function useBoardPage() {
     messages,
     sendMessage,
     lastSavedAt,
-    requestSave,
     leaveReason,
     socketError,
     clearSocketError,
@@ -111,41 +107,13 @@ export function useBoardPage() {
     setSaveStatus("unsaved");
   }, []);
 
-  function clearSaveTimeout() {
-    if (saveTimeoutRef.current !== null) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-  }
-
-  // "Saved" is now the server telling us it wrote the board - from an autosave
-  // or from the Save button - rather than a local request resolving.
+  // There's nothing to press: the server writes the board on its own and
+  // reports it here, so "saved" is a fact from the server rather than a
+  // conclusion this client draws about its own request.
   useEffect(() => {
     if (!lastSavedAt) return;
-    clearSaveTimeout();
     setSaveStatus("saved");
-    setSaveError(null);
   }, [lastSavedAt]);
-
-  useEffect(() => clearSaveTimeout, []);
-
-  function save() {
-    if (!Number.isInteger(boardId)) return;
-    setSaveStatus("saving");
-    setSaveError(null);
-    requestSave();
-
-    // Nothing acknowledges a socket emit, so don't sit on "Saving…" forever if
-    // the confirmation never arrives - fall back to unsaved and say so.
-    clearSaveTimeout();
-    saveTimeoutRef.current = window.setTimeout(() => {
-      saveTimeoutRef.current = null;
-      setSaveStatus("unsaved");
-      setSaveError(
-        "Couldn't confirm the save. Your drawing is still here, and autosave will retry.",
-      );
-    }, SAVE_CONFIRM_TIMEOUT_MS);
-  }
 
   // Toolbar is memoized, so these need stable identity too - same reasoning
   // as handleStrokesChange above.
@@ -193,8 +161,6 @@ export function useBoardPage() {
     socketError,
     clearSocketError,
     saveStatus,
-    saveError,
-    save,
     handleStrokesChange,
     userId: user?.id ?? null,
     goBack: () => navigate("/boards"),

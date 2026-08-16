@@ -3,7 +3,6 @@ import type {
   BoardDetail,
   BoardMember,
   BoardSummary,
-  Stroke,
   User,
 } from "../types";
 
@@ -89,11 +88,6 @@ export const api = {
       }),
     remove: (id: number) =>
       request<void>(`/api/boards/${id}`, { method: "DELETE" }),
-    saveData: (id: number, data: Stroke[]) =>
-      request<{ id: number; data: Stroke[] }>(`/api/boards/${id}/data`, {
-        method: "PUT",
-        body: JSON.stringify({ data }),
-      }),
     listMembers: (id: number) => request<BoardMember[]>(`/api/boards/${id}/members`),
     inviteMember: (id: number, email: string) =>
       request<{ userId: number; username: string; role: BoardMember["role"] }>(
