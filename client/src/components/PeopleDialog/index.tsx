@@ -207,7 +207,7 @@ export function PeopleDialog({
               both tends to get it announced twice. */}
           <p
             id={statusId}
-            className={`people-feedback ${statusTone(inviteeStatus.kind)}`}
+            className={`people-feedback people-invite-status ${statusTone(inviteeStatus.kind)}`}
             aria-live="polite"
           >
             {statusMessage(inviteeStatus)}
