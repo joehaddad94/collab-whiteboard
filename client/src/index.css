@@ -902,7 +902,7 @@ a {
 /* Two classes deliberately: this element also carries .people-feedback, whose
    shorthand margin would win on a tie if the rules ever got reordered. */
 .people-feedback.people-invite-status {
-  margin-top: 22px;
+  margin-top: 16px;
   min-height: 1.25em;
 }
 
