@@ -43,9 +43,15 @@ days) or you log out.
 
 ### Boards
 `/boards` lists every board you're a member of, as a card grid, with a role
-badge (Owner/Editor). Create one from the input at the top. Owners can rename
-or delete a board inline; either action needs confirmation first (a real
-dialog, not a browser `confirm()`). Click anywhere on a card to open it.
+badge (Owner/Editor), and when it was last edited. Create one from the input
+at the top. Owners can rename or delete a board inline; either action needs
+confirmation first (a real dialog, not a browser `confirm()`). Click anywhere
+on a card to open it.
+
+The list refreshes itself when you return to the tab, so a board someone
+shared with you while you were elsewhere is there when you look, rather than
+waiting for a manual reload. There's no push for this — the socket connection
+is per-board, so this page has no live channel of its own.
 
 ### The whiteboard
 `/boards/:id` — a full-screen canvas. The floating toolbar (bottom center)

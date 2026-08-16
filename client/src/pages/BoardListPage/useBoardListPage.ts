@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiRequestError } from "../../hooks/useApi";
 import type { BoardSummary } from "../../types";
 
@@ -12,22 +12,50 @@ export function useBoardListPage() {
   const [renameValue, setRenameValue] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  useEffect(() => {
-    refreshBoards();
-  }, []);
-
-  async function refreshBoards() {
-    setLoading(true);
+  // `silent` is for refreshes the user didn't ask for: they shouldn't blank
+  // the list behind a loading message, and if one fails, the boards already on
+  // screen are still valid - replacing them with an error would be a lie.
+  const loadBoards = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const list = await api.boards.list();
       setBoards(list);
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to load boards");
+      if (!silent) {
+        setError(
+          err instanceof ApiRequestError ? err.message : "Failed to load boards",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadBoards();
+  }, [loadBoards]);
+
+  // Someone can share a board with you while you're looking at something else,
+  // and nothing pushes that: the socket is board-scoped, so this page holds no
+  // live connection to be told on. Refetching when the tab comes back turns
+  // "reload to find out" into "it's there when you look".
+  //
+  // Skipped mid-rename, so an inline edit isn't yanked out from under you by a
+  // refresh you didn't ask for.
+  useEffect(() => {
+    if (renamingId !== null) return;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void loadBoards({ silent: true });
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [loadBoards, renamingId]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -37,7 +65,7 @@ export function useBoardListPage() {
     try {
       await api.boards.create(name);
       setNewBoardName("");
-      await refreshBoards();
+      await loadBoards();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Failed to create board");
     } finally {
@@ -60,7 +88,7 @@ export function useBoardListPage() {
     try {
       await api.boards.rename(id, name);
       setRenamingId(null);
-      await refreshBoards();
+      await loadBoards();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Failed to rename board");
     }
@@ -80,7 +108,7 @@ export function useBoardListPage() {
     setConfirmDeleteId(null);
     try {
       await api.boards.remove(id);
-      await refreshBoards();
+      await loadBoards();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Failed to delete board");
     }
