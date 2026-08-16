@@ -849,19 +849,6 @@ a {
   border: 1.5px solid var(--ink-400);
 }
 
-/* Mono, and a fixed 2-character box: "2" and "22" then occupy the same width,
-   so nothing in the toolbar moves while you drag. */
-.brush-value {
-  width: 2ch;
-  flex-shrink: 0;
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--ink-400);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Covers exactly the same box as the canvas - useCursorOverlay measures it to
    recover the world -> screen transform. */
 .cursor-layer {

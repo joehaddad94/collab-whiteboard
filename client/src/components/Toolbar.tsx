@@ -89,9 +89,6 @@ export const Toolbar = memo(function Toolbar({
           onChange={(e) => onBrushSizeChange(Number(e.target.value))}
           aria-label="Brush size"
         />
-        <span className="brush-value" aria-hidden="true">
-          {brushSize}
-        </span>
       </label>
 
       <div className="toolbar-sep" />
