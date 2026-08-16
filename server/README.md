@@ -61,7 +61,7 @@ Everything below is a summary — that's the authoritative reference.
 | GET | `/api/boards/:id` | member | Includes current strokes (`data`) |
 | PATCH | `/api/boards/:id` | owner | Rename |
 | DELETE | `/api/boards/:id` | owner | Cascades memberships + chat history |
-| PUT | `/api/boards/:id/data` | member | Explicit save — replaces the whole strokes array |
+| PUT | `/api/boards/:id/data` | member | Replaces the whole strokes array. The app itself saves over the socket (see `save-board`); this is the equivalent for a non-socket client. |
 | GET | `/api/boards/:id/members` | member | List members with roles |
 | POST | `/api/boards/:id/members` | owner | Invite by email, immediate `editor` membership |
 | DELETE | `/api/boards/:id/members/:userId` | owner | Can't remove the owner |
@@ -118,6 +118,7 @@ there's no separate WS-level login step.
 | `redo` | — | Restores your own last undone stroke. |
 | `cursor-move` | `{ x, y }` | Throttle this client-side (the frontend does ~25/sec) — it's rebroadcast to everyone else on the board. |
 | `chat-message` | `{ text }` | 1–2000 characters after trimming. |
+| `save-board` | — | Writes the board now instead of waiting for the autosave debounce. What the Save button sends. |
 
 ### Server → Client
 
@@ -134,6 +135,7 @@ there's no separate WS-level login step.
 | `stroke-restored` | `{ stroke }` | Redo result. Whole room including sender. |
 | `cursor-update` | `{ userId, username, x, y }` | Rebroadcast, sender excluded. |
 | `chat-message` | `{ id, boardId, userId, username, text, createdAt }` | Whole room including the sender — there's no optimistic local echo on the frontend, it just waits for this like everyone else. |
+| `board-saved` | `{ boardId, savedAt }` | The board was written to the database, by autosave or by `save-board`. Drives the frontend's save indicator — "saved" is something the server reports, not something a client infers. Not sent if the write failed. |
 | `error` | `{ message }` | One generic channel for every rejected action (bad join, invalid chat text, an unexpected server-side error) rather than a bespoke event per failure type. |
 | `removed-from-board` | `{ boardId }` | Sent to a specific user if their membership is revoked while they're connected to that board. |
 | `board-deleted` | `{ boardId }` | Sent to everyone connected to a board if its owner deletes it. |

@@ -18,6 +18,7 @@ export type BoardLeaveReason = "removed" | "board-deleted" | null;
 export function useBoardSocket(boardId: number) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [leaveReason, setLeaveReason] = useState<BoardLeaveReason>(null);
@@ -76,6 +77,13 @@ export function useBoardSocket(boardId: number) {
       setConnectedUsers((prev) => prev.filter((u) => u.userId !== userId));
     });
 
+    // The server owns persistence now and writes the board on a debounce, so
+    // "saved" is something it tells us rather than something the client
+    // concludes from its own request finishing.
+    socket.on("board-saved", ({ savedAt }: { savedAt: string }) => {
+      setLastSavedAt(savedAt);
+    });
+
     socket.on("removed-from-board", () => setLeaveReason("removed"));
     socket.on("board-deleted", () => setLeaveReason("board-deleted"));
 
@@ -94,12 +102,18 @@ export function useBoardSocket(boardId: number) {
     socket?.emit("chat-message", { text });
   }
 
+  function requestSave() {
+    socket?.emit("save-board");
+  }
+
   return {
     socket,
     connected,
     connectedUsers,
     messages,
     sendMessage,
+    lastSavedAt,
+    requestSave,
     leaveReason,
     socketError,
     clearSocketError,

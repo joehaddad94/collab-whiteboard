@@ -7,6 +7,10 @@ export function setIo(server: Server) {
   io = server;
 }
 
+export function getIo(): Server | undefined {
+  return io;
+}
+
 export function evictUserFromBoard(boardId: number, userId: number) {
   if (!io) return;
   const session = getSession(boardId);

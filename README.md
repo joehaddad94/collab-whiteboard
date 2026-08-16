@@ -41,8 +41,9 @@ Full setup details, environment variables, and scripts:
   everyone on the board, not just visible after a refresh
 - Live cursors and presence — see who's connected and where their cursor is
 - Per-user undo/redo and a whole-board Clear
-- Save/load — explicit save to persist a board's state; it reloads exactly
-  as saved
+- Save/load — the server autosaves a board as it changes, and flushes when
+  the last person leaves, so work isn't lost by forgetting to save; Save
+  writes immediately. It reloads exactly as saved
 - Real-time per-board chat, with history
 - Invite collaborators by email (Owner/Editor roles)
 - Real authentication (signup/login/logout, not just a display name)
@@ -95,8 +96,11 @@ never drawn into canvas pixels.
 
 **Data model** — boards are multi (not one shared canvas); a board's
 drawing state is a JSON blob of strokes on the `Board` row, not a normalized
-per-stroke table — live strokes aren't persisted per-event at all (only an
-explicit Save touches the database), so there's nothing to normalize.
+per-stroke table — strokes aren't persisted per-event, so there's nothing to
+normalize. Persistence is the server writing its own board session on a
+debounce (and on the last person leaving), not each client saving its copy:
+one writer instead of N racing on the same row, and no work lost because
+nobody pressed a button.
 Undo/redo is per-user and lives in server memory per active board session,
 not persisted — it's scoped to the live editing session, the same way
 Figma/Google Docs don't guarantee undo history survives a reload either.

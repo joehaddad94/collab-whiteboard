@@ -3,10 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useBoardSocket } from "../../hooks/useBoardSocket";
 import { useAuth } from "../../hooks/useAuth";
 import { api, ApiRequestError } from "../../hooks/useApi";
-import type { BoardDetail, BoardMember, Stroke, Tool } from "../../types";
+import type { BoardDetail, BoardMember, Tool } from "../../types";
 
 const DEFAULT_COLOR = "#1b1d22";
 const DEFAULT_BRUSH_SIZE = 4;
+const SAVE_CONFIRM_TIMEOUT_MS = 8000;
 
 export type SaveStatus = "saved" | "unsaved" | "saving";
 
@@ -24,8 +25,8 @@ export function useBoardPage() {
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [brushSize, setBrushSize] = useState(DEFAULT_BRUSH_SIZE);
 
-  const boardStrokesRef = useRef<Stroke[]>([]);
   const hasHydratedRef = useRef(false);
+  const saveTimeoutRef = useRef<number | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -39,6 +40,8 @@ export function useBoardPage() {
     connectedUsers,
     messages,
     sendMessage,
+    lastSavedAt,
+    requestSave,
     leaveReason,
     socketError,
     clearSocketError,
@@ -95,8 +98,9 @@ export function useBoardPage() {
 
   // useCallback here isn't optional cleanup - Whiteboard is memoized, and an
   // unstable onStrokesChange reference would defeat that on every render.
-  const handleStrokesChange = useCallback((strokes: Stroke[]) => {
-    boardStrokesRef.current = strokes;
+  // The strokes themselves aren't needed: the server holds the copy that gets
+  // persisted, so this only has to notice that something changed.
+  const handleStrokesChange = useCallback(() => {
     // The first strokes-change per board is the initial board-joined hydrate,
     // not a real edit - only mark unsaved for changes after that.
     if (!hasHydratedRef.current) {
@@ -106,17 +110,40 @@ export function useBoardPage() {
     setSaveStatus("unsaved");
   }, []);
 
-  async function save() {
+  function clearSaveTimeout() {
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+  }
+
+  // "Saved" is now the server telling us it wrote the board - from an autosave
+  // or from the Save button - rather than a local request resolving.
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    clearSaveTimeout();
+    setSaveStatus("saved");
+    setSaveError(null);
+  }, [lastSavedAt]);
+
+  useEffect(() => clearSaveTimeout, []);
+
+  function save() {
     if (!Number.isInteger(boardId)) return;
     setSaveStatus("saving");
     setSaveError(null);
-    try {
-      await api.boards.saveData(boardId, boardStrokesRef.current);
-      setSaveStatus("saved");
-    } catch (err) {
+    requestSave();
+
+    // Nothing acknowledges a socket emit, so don't sit on "Saving…" forever if
+    // the confirmation never arrives - fall back to unsaved and say so.
+    clearSaveTimeout();
+    saveTimeoutRef.current = window.setTimeout(() => {
+      saveTimeoutRef.current = null;
       setSaveStatus("unsaved");
-      setSaveError(err instanceof ApiRequestError ? err.message : "Failed to save");
-    }
+      setSaveError(
+        "Couldn't confirm the save. Your drawing is still here, and autosave will retry.",
+      );
+    }, SAVE_CONFIRM_TIMEOUT_MS);
   }
 
   // Toolbar is memoized, so these need stable identity too - same reasoning

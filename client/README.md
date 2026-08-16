@@ -55,13 +55,17 @@ can't be undone. Drawing, erasing, and undo/redo all sync live to everyone
 else connected to the same board as you make them — there's no save step
 required to see each other's changes in real time.
 
-**Save** (top right) persists the board's current state to the database
-explicitly. Real-time sync and saving are two different things: the live
-drawing you see is peer-to-peer-ish via the server (never touches the
-database per stroke); Save is what makes it survive a server restart or show
-up correctly if the board goes fully idle and gets reloaded fresh later. The
-status text next to the board title tracks this ("Saved" / "Unsaved
-changes" / "Saving…").
+Boards **autosave**: the server writes a board a couple of seconds after it
+stops changing, and again when the last person leaves, so nothing is lost by
+forgetting to save. **Save** (top right) just skips the wait. The status text
+next to the board title reflects what the server has actually written
+("Saved" / "Unsaved changes" / "Saving…"), not what this browser thinks it
+sent.
+
+Real-time sync and saving are still two different things: the live drawing
+you see is relayed by the server without touching the database per stroke,
+and persistence is what makes a board survive a restart or reload correctly
+after it goes idle.
 
 ### Presence & cursors
 Everyone currently viewing the board shows up as an avatar chip in the

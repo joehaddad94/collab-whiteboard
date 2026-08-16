@@ -97,6 +97,14 @@ export function saveBoardData(boardId: number, userId: number, data: unknown) {
   return { id: boardId, data };
 }
 
+// The socket-side autosave writing the server's own board session, so there's
+// no requesting user to authorize and nothing to re-validate - these strokes
+// were checked as they arrived over the socket, and only ever came from
+// members (join-board enforces that).
+export function persistBoardStrokes(boardId: number, strokes: Stroke[]) {
+  boardsRepository.updateBoardData(boardId, strokes);
+}
+
 export function listMembers(boardId: number, userId: number) {
   requireMembership(boardId, userId);
   return boardsRepository.findMembersForBoard(boardId);

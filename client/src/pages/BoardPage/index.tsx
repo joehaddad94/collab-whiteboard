@@ -96,8 +96,8 @@ export function BoardPage() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => void save()}
-            disabled={saveStatus === "saving"}
+            onClick={save}
+            disabled={saveStatus === "saving" || !connected}
           >
             {saveStatus === "saving" ? "Saving…" : "Save"}
           </button>

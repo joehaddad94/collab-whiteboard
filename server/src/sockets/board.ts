@@ -9,6 +9,11 @@ import {
   listUniqueUsers,
   removeSessionIfEmpty,
 } from "./boardSessions.js";
+import {
+  flushPendingSave,
+  markBoardDirty,
+  saveBoardNow,
+} from "./boardAutosave.js";
 import type { Stroke } from "../modules/boards/boards.types.js";
 
 function isValidPoint(point: unknown): point is { x: number; y: number } {
@@ -210,6 +215,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       active.session.undoStack.set(user.userId, undoStack);
       active.session.redoStack.set(user.userId, []);
 
+      markBoardDirty(active.boardId);
       socket.to(active.roomName).emit("stroke-end", { strokeId });
     }),
   );
@@ -225,6 +231,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       active.session.undoStack.clear();
       active.session.redoStack.clear();
 
+      markBoardDirty(active.boardId);
       io.to(active.roomName).emit("board-cleared");
     }),
   );
@@ -248,6 +255,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       redoStack.push(stroke);
       active.session.redoStack.set(user.userId, redoStack);
 
+      markBoardDirty(active.boardId);
       io.to(active.roomName).emit("stroke-removed", { strokeId: stroke.id });
     }),
   );
@@ -268,7 +276,19 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       undoStack.push(stroke);
       active.session.undoStack.set(user.userId, undoStack);
 
+      markBoardDirty(active.boardId);
       io.to(active.roomName).emit("stroke-restored", { stroke });
+    }),
+  );
+
+  // Autosave already writes the board on a debounce; this is the Save button
+  // asking for it now rather than in a second or two.
+  socket.on(
+    "save-board",
+    withErrorHandling(socket, () => {
+      const active = activeSession();
+      if (!active) return;
+      saveBoardNow(active.boardId);
     }),
   );
 
@@ -339,6 +359,12 @@ function leaveBoard(socket: Socket, boardId: number) {
   // doesn't remove them from everyone else's presence list.
   if (!session || !hasUserConnection(session, user.userId)) {
     socket.to(roomName).emit("user-left", { userId: user.userId });
+  }
+
+  // Last one out: the session - and everything drawn since the last write -
+  // is about to be discarded, so this is the final chance to persist it.
+  if (session && session.connectedUsers.size === 0) {
+    flushPendingSave(boardId);
   }
   removeSessionIfEmpty(boardId);
 }
