@@ -496,6 +496,74 @@ a {
   color: var(--ink-900);
 }
 
+/* ---------- error boundary ---------- */
+/* Had no styles at all, so a render crash showed a bare h1, a raw exception
+   string and a browser-default button on the app background. Borrows the auth
+   page's centred-card treatment, since it's the same situation: one thing to
+   read, one or two things to do. */
+.error-boundary {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--bg-app);
+  background-image: radial-gradient(var(--ink-200) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.error-boundary-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+.error-boundary-card h1 {
+  margin: 14px 0 8px;
+  font-size: 20px;
+}
+.error-boundary-card > p {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-600);
+}
+.error-boundary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.error-boundary-details {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+.error-boundary-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+.error-boundary-details code {
+  display: block;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  color: var(--ink-600);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  /* Exception text is long, unbroken and not ours to reflow - let it wrap
+     rather than stretch the card. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* ---------- misc ---------- */
 .page-loading {
   display: flex;

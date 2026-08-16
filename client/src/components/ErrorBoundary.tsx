@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { BrandIcon } from "./icons";
 
 interface Props {
   children: ReactNode;
@@ -23,17 +24,47 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   render() {
-    if (this.state.error) {
-      return (
-        <div className="error-boundary">
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <div className="error-boundary">
+        <div className="error-boundary-card" role="alert">
+          <BrandIcon size={26} />
           <h1>Something went wrong</h1>
-          <p>{this.state.error.message}</p>
-          <button type="button" onClick={() => window.location.reload()}>
-            Reload
-          </button>
+          <p>
+            The board didn't load properly. Reloading usually clears it — your
+            drawing is saved on the server, not in this page.
+          </p>
+
+          <div className="error-boundary-actions">
+            {/* Both are hard navigations rather than router calls: whatever
+                broke is still mounted, and asking React to re-render its way
+                out tends to land straight back here. */}
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => window.location.assign("/boards")}
+            >
+              Back to boards
+            </button>
+          </div>
+
+          {/* The exception text is for whoever reports the bug, not for the
+              person hitting it - it used to be the entire body of this
+              screen, where it read as alarming and meant nothing. */}
+          <details className="error-boundary-details">
+            <summary>Technical details</summary>
+            <code>{this.state.error.message}</code>
+          </details>
         </div>
-      );
-    }
-    return this.props.children;
+      </div>
+    );
   }
 }
