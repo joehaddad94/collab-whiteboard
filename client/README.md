@@ -36,8 +36,8 @@ useful on its own.
 
 ### Auth
 Sign up with an email, a unique username (3-20 letters/numbers), and a
-password (8+ characters). Log in with **username + password** — email isn't
-a login credential, just an account field. Session persists via an httpOnly
+password (8+ characters). Log in with **either your username or your email**,
+plus the password. Session persists via an httpOnly
 cookie; refreshing the page keeps you logged in until the token expires (7
 days) or you log out.
 
@@ -82,8 +82,11 @@ The "People" button opens a dialog listing everyone with access to the board,
 with their role and a green dot for anyone currently connected. Anyone on the
 board can open it — seeing who else has access isn't an owner-only concern.
 
-Owners additionally get to invite and remove from here. Invite is by email and
-the person needs an existing account; they're added as an Editor immediately,
+Owners additionally get to invite and remove from here. Invite is by
+**username** — the same name people are shown by everywhere else in the app,
+matched case-insensitively — and the field checks as you type, so "no account
+with that username", "already on this board", or a confirmed match appears
+before you submit rather than after. They're added as an Editor immediately,
 with no accept step, and the list refreshes so they appear in it. Removing
 takes a second click to confirm in the row, and takes effect immediately — if
 that person is on the board right now, they're dropped from it.
@@ -116,8 +119,10 @@ be a class component.
 src/
   pages/            LoginPage, SignupPage, BoardListPage, BoardPage
   components/       Whiteboard, Toolbar, UserList, CursorOverlay, ChatPanel,
-                     InvitePanel, ConfirmDialog, Avatar, icons, ErrorBoundary
+                     PeopleDialog, Dialog, ConfirmDialog, Avatar, icons,
+                     ErrorBoundary
   hooks/            useAuth, useApi, useBoardSocket
+  lib/              worldView (board coordinate space), formatRelativeTime
   types/            shared types (deliberately duplicated from the backend's
                      own types, not a shared package - see root README)
 ```

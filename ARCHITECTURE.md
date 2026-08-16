@@ -1608,6 +1608,62 @@ hardcoded, so two open dialogs can't both claim it.
 
 ---
 
+## ADR-043: Invite by username, checked before submitting
+
+**Decision:** `POST /api/boards/:id/members` takes `{ username }` instead of
+`{ email }`, matched case-insensitively via `findUserByUsername` (which already
+queries `COLLATE NOCASE`, matching the unique index). A new owner-only
+`GET /api/boards/:id/members/lookup?username=` answers whether that username
+exists, is already a member, or is you — the People dialog calls it on a 350ms
+debounce so the answer appears while you type.
+
+**Context:** Email was the odd identifier out. The app shows people by username
+everywhere — presence chips, the member list, chat — and ADR-033 already made
+login accept either. So inviting was the one place you had to know something
+about a person that the app never shows you, and getting it wrong produced
+"User not found" only after submitting.
+
+The lookup exists because "check if the username exists" is only useful before
+the invite, not after. It never 404s for a missing user: "no such username" is
+a successful answer to the question being asked, and returning 404 would
+conflate it with "board not found". It 404s only for a board you can't see.
+
+**Alternatives considered:**
+- **A general `GET /api/users?username=` lookup** — the obvious shape, and
+  rejected on enumeration grounds: it would let any authenticated user probe
+  whether arbitrary usernames exist. Scoping it to a board the caller *owns*
+  keeps the audience small.
+- **Autocomplete over a user-search endpoint** — better UX, but a prefix
+  search over all users is a much larger enumeration surface than an exact-match
+  check, for a nicety.
+- **Accept either username or email**, as login does — rejected here: login is
+  the case where someone genuinely may not recall which they used, whereas
+  invite is about someone else, whose username you can see and whose email you
+  probably can't.
+- **Client-side validation only** (format check, no server call) — catches
+  typos in shape but not the actual question, which is whether the person
+  exists.
+
+**Trade-offs:** This does confirm username existence to board owners, which
+sits against the account-enumeration stance ADR-015 took for login. The
+difference is audience and degree: login is unauthenticated and public, this is
+authenticated, owner-only, exact-match, and the invite endpoint already
+disclosed the same fact through its error. Narrowing it further would mean
+giving up the pre-submit check entirely.
+
+The check is an aid, not a gate — if the lookup request fails, the UI says
+nothing and lets the invite itself be the authority, since the server validates
+regardless. Invite is only blocked on a definite negative (missing / self /
+already a member), never on an in-flight or failed check.
+
+**Also in this change:** the `openapi.yaml` examples used `ana_dev`, which fails
+the spec's own `^[a-zA-Z0-9]{3,20}$` username pattern — copying the Swagger UI
+example returned 400. Corrected throughout. `client/README.md` still claimed
+login was username-only, stale since ADR-033, and still listed `InvitePanel` in
+the component tree, stale since ADR-042.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

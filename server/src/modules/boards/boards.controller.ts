@@ -70,9 +70,17 @@ export function inviteMember(req: AuthenticatedRequest, res: Response) {
   const { alreadyMember, ...body } = boardsService.inviteMember(
     boardId,
     req.user!.userId,
-    req.body?.email,
+    req.body?.username,
   );
   res.status(alreadyMember ? 200 : 201).json(body);
+}
+
+export function lookupInvitee(req: AuthenticatedRequest, res: Response) {
+  const boardId = parseId(req.params.id);
+  const username = Array.isArray(req.query.username)
+    ? req.query.username[0]
+    : req.query.username;
+  res.json(boardsService.lookupInvitee(boardId, req.user!.userId, username));
 }
 
 export function removeMember(req: AuthenticatedRequest, res: Response) {

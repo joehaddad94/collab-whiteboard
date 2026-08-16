@@ -69,3 +69,10 @@ export interface ChatMessage {
   text: string;
   createdAt: string;
 }
+
+export interface InviteeLookup {
+  username: string;
+  exists: boolean;
+  alreadyMember: boolean;
+  isSelf: boolean;
+}

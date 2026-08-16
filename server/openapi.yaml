@@ -68,7 +68,7 @@ paths:
               example:
                 email: ana@example.com
                 password: password123
-                username: ana_dev
+                username: ana2dev
       responses:
         "201":
           description: Account created, session cookie set
@@ -108,7 +108,7 @@ paths:
                 password:
                   type: string
               example:
-                identifier: ana_dev
+                identifier: ana2dev
                 password: password123
       responses:
         "200":
@@ -352,22 +352,24 @@ paths:
           $ref: "#/components/responses/BoardNotFound"
     post:
       tags: [Membership]
-      summary: Invite a user to the board by email
+      summary: Invite a user to the board by username
       description: |
         Owner only. Adds the target user as an `editor` immediately - there's
         no pending/accept step. Idempotent if they're already a member
-        (returns 200 instead of 201, no duplicate row).
+        (returns 200 instead of 201, no duplicate row). The username is matched
+        case-insensitively, matching the unique index on `User.username`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [username]
               properties:
-                email:
+                username:
                   type: string
-                  format: email
+              example:
+                username: ana2dev
       responses:
         "201":
           description: Added as a new member
@@ -382,7 +384,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/BoardMember"
         "400":
-          description: Missing email, or inviting yourself
+          description: Missing username, or inviting yourself
           content:
             application/json:
               schema:
@@ -396,7 +398,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "404":
-          description: Board not found, or no account exists with that email
+          description: Board not found, or no account exists with that username
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /api/boards/{id}/members/lookup:
+    get:
+      tags: [Membership]
+      summary: Check whether a username can be invited
+      description: |
+        Owner only. Lets the invite UI report "no such user" / "already on this
+        board" while the owner is still typing, instead of only after they
+        submit. Deliberately narrower than a general user-search: it confirms
+        whether a username exists, so it's restricted to owners of the board in
+        question rather than any authenticated user.
+
+        Never 404s for a missing user - "this username doesn't exist" is a
+        successful answer to the question being asked, not a failed request.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer, whether or not the user exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    description: Canonical casing when the user exists; as supplied when not.
+                  exists:
+                    type: boolean
+                  alreadyMember:
+                    type: boolean
+                  isSelf:
+                    type: boolean
+              example:
+                username: ana2dev
+                exists: true
+                alreadyMember: false
+                isSelf: false
+        "400":
+          description: Missing username
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Board not found (or not visible to this user)
           content:
             application/json:
               schema:
@@ -490,7 +559,7 @@ components:
       example:
         id: 1
         email: ana@example.com
-        username: ana_dev
+        username: ana2dev
 
     BoardRole:
       type: string

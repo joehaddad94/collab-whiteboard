@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../errors.js";
-import { findUserByEmail } from "../auth/auth.repository.js";
+import { findUserByUsername } from "../auth/auth.repository.js";
 import * as boardsRepository from "./boards.repository.js";
 import type { Role } from "./boards.repository.js";
 import { isValidStroke, type Stroke } from "./boards.types.js";
@@ -110,20 +110,53 @@ export function listMembers(boardId: number, userId: number) {
   return boardsRepository.findMembersForBoard(boardId);
 }
 
+function requireUsername(raw: unknown): string {
+  const username = typeof raw === "string" ? raw.trim() : "";
+  if (username.length === 0) {
+    throw new ValidationError("username is required");
+  }
+  return username;
+}
+
+// Answers "can I invite this person?" before an invite is attempted, so the
+// dialog can say so while you're still typing rather than only on submit.
+// Owner-only for the same reason invite is: it confirms whether a username
+// exists, and the narrower the audience for that the better (see ADR-043).
+export function lookupInvitee(
+  boardId: number,
+  userId: number,
+  rawUsername: unknown,
+) {
+  requireOwner(boardId, userId);
+  const username = requireUsername(rawUsername);
+
+  const targetUser = findUserByUsername(username);
+  if (!targetUser) {
+    return { username, exists: false, alreadyMember: false, isSelf: false };
+  }
+
+  return {
+    username: targetUser.username,
+    exists: true,
+    alreadyMember:
+      boardsRepository.findMembership(boardId, targetUser.id) !== undefined,
+    isSelf: targetUser.id === userId,
+  };
+}
+
 export function inviteMember(
   boardId: number,
   userId: number,
-  rawEmail: unknown,
+  rawUsername: unknown,
 ) {
   requireOwner(boardId, userId);
+  const username = requireUsername(rawUsername);
 
-  if (typeof rawEmail !== "string" || rawEmail.length === 0) {
-    throw new ValidationError("email is required");
-  }
-
-  const targetUser = findUserByEmail(rawEmail.toLowerCase());
+  // Case-insensitive, matching the unique index on User.username - so an
+  // invite works whether or not you remembered how they capitalised it.
+  const targetUser = findUserByUsername(username);
   if (!targetUser) {
-    throw new NotFoundError("User not found");
+    throw new NotFoundError(`No user named "${username}"`);
   }
 
   if (targetUser.id === userId) {

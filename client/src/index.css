@@ -763,6 +763,13 @@ a {
 .people-feedback.is-error {
   color: var(--danger);
 }
+.people-feedback.is-muted {
+  color: var(--ink-400);
+}
+/* Reserve the line so the form doesn't jump as the check resolves. */
+#invite-status {
+  min-height: 1.25em;
+}
 
 .board-canvas-area {
   position: relative;

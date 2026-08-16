@@ -1,6 +1,17 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api, ApiRequestError } from "../../hooks/useApi";
 import type { BoardMember, ConnectedUser } from "../../types";
+
+const LOOKUP_DEBOUNCE_MS = 350;
+
+export type InviteeStatus =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "unknown" }
+  | { kind: "missing" }
+  | { kind: "self" }
+  | { kind: "member" }
+  | { kind: "ok"; username: string };
 
 interface UsePeopleDialogOptions {
   boardId: number;
@@ -19,7 +30,10 @@ export function usePeopleDialog({
   connectedUsers,
   onMembersChanged,
 }: UsePeopleDialogOptions) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [inviteeStatus, setInviteeStatus] = useState<InviteeStatus>({
+    kind: "idle",
+  });
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -43,9 +57,46 @@ export function usePeopleDialog({
       });
   }, [members, connectedUsers]);
 
+  // Checks the typed username against the server as you go, so "no such user"
+  // arrives while you can still fix it instead of after you commit. Debounced,
+  // and every run cancels the previous one's result - responses can land out
+  // of order, and a stale one would otherwise overwrite a newer answer.
+  useEffect(() => {
+    const trimmed = username.trim();
+    if (!trimmed) {
+      setInviteeStatus({ kind: "idle" });
+      return;
+    }
+
+    let cancelled = false;
+    setInviteeStatus({ kind: "checking" });
+
+    const timer = setTimeout(() => {
+      api.boards
+        .lookupInvitee(boardId, trimmed)
+        .then((result) => {
+          if (cancelled) return;
+          if (!result.exists) setInviteeStatus({ kind: "missing" });
+          else if (result.isSelf) setInviteeStatus({ kind: "self" });
+          else if (result.alreadyMember) setInviteeStatus({ kind: "member" });
+          else setInviteeStatus({ kind: "ok", username: result.username });
+        })
+        .catch(() => {
+          // The check is an aid, not a gate - if it fails, say nothing and let
+          // the invite itself be the authority.
+          if (!cancelled) setInviteeStatus({ kind: "unknown" });
+        });
+    }, LOOKUP_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username, boardId, members]);
+
   async function handleInvite(e: FormEvent) {
     e.preventDefault();
-    const trimmed = email.trim();
+    const trimmed = username.trim();
     if (!trimmed) return;
 
     setInviting(true);
@@ -57,7 +108,7 @@ export function usePeopleDialog({
       // above. The message just names what happened.
       await onMembersChanged();
       setInviteMessage(`${result.username} can now edit this board`);
-      setEmail("");
+      setUsername("");
     } catch (err) {
       setInviteError(
         err instanceof ApiRequestError ? err.message : "Failed to invite",
@@ -94,8 +145,18 @@ export function usePeopleDialog({
 
   return {
     people,
-    email,
-    setEmail,
+    username,
+    setUsername,
+    inviteeStatus,
+    // Only block on a definite "this can't work" - a failed or in-flight check
+    // shouldn't stop you submitting, since the invite validates server-side
+    // anyway.
+    canInvite:
+      username.trim().length > 0 &&
+      !inviting &&
+      inviteeStatus.kind !== "missing" &&
+      inviteeStatus.kind !== "self" &&
+      inviteeStatus.kind !== "member",
     inviting,
     inviteMessage,
     inviteError,

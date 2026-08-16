@@ -63,7 +63,8 @@ Everything below is a summary — that's the authoritative reference.
 | DELETE | `/api/boards/:id` | owner | Cascades memberships + chat history |
 | PUT | `/api/boards/:id/data` | member | Replaces the whole strokes array. The app itself never calls this — boards autosave server-side; it exists for a non-socket client that wants to write one. |
 | GET | `/api/boards/:id/members` | member | List members with roles |
-| POST | `/api/boards/:id/members` | owner | Invite by email, immediate `editor` membership |
+| POST | `/api/boards/:id/members` | owner | Invite by username (case-insensitive), immediate `editor` membership |
+| GET | `/api/boards/:id/members/lookup?username=` | owner | Whether that username exists, is already a member, or is you — so the invite UI can say so before you submit |
 | DELETE | `/api/boards/:id/members/:userId` | owner | Can't remove the owner |
 
 Conventions worth knowing before you poke at this with curl/Postman:
@@ -76,6 +77,10 @@ Conventions worth knowing before you poke at this with curl/Postman:
   prevent account enumeration.
 - **Inviting an existing member is a no-op, not an error** — returns 200
   instead of 201 with the same body, rather than a conflict.
+- **The lookup endpoint never 404s for a missing user** — "no such username"
+  is a successful answer to the question it was asked. It 404s only when the
+  *board* isn't visible to you. It's owner-scoped rather than open to any
+  logged-in user, because it does confirm whether a username exists.
 
 ## Authentication
 

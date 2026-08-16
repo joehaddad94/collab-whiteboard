@@ -1,7 +1,33 @@
 import { Dialog } from "../Dialog";
 import { Avatar } from "../Avatar";
 import type { BoardMember, ConnectedUser } from "../../types";
-import { usePeopleDialog } from "./usePeopleDialog";
+import { usePeopleDialog, type InviteeStatus } from "./usePeopleDialog";
+
+function statusMessage(status: InviteeStatus): string {
+  switch (status.kind) {
+    case "checking":
+      return "Checking…";
+    case "missing":
+      return "No account with that username";
+    case "self":
+      return "That's you — you already own this board";
+    case "member":
+      return "Already on this board";
+    case "ok":
+      return `${status.username} found`;
+    // "unknown" means the check itself failed. Saying nothing is right: the
+    // invite still works, and a warning about a failed check would only be
+    // noise the user can't act on.
+    default:
+      return "";
+  }
+}
+
+function statusTone(kind: InviteeStatus["kind"]): string {
+  if (kind === "ok") return "is-success";
+  if (kind === "missing" || kind === "self") return "is-error";
+  return "is-muted";
+}
 
 interface PeopleDialogProps {
   boardId: number;
@@ -26,8 +52,10 @@ export function PeopleDialog({
 }: PeopleDialogProps) {
   const {
     people,
-    email,
-    setEmail,
+    username,
+    setUsername,
+    inviteeStatus,
+    canInvite,
     inviting,
     inviteMessage,
     inviteError,
@@ -98,26 +126,37 @@ export function PeopleDialog({
 
       {canManage && (
         <form className="people-invite-form" onSubmit={handleInvite}>
-          <label htmlFor="invite-email" className="people-invite-label">
-            Invite someone with an account
+          <label htmlFor="invite-username" className="people-invite-label">
+            Invite by username
           </label>
           <div className="people-invite-row">
             <input
-              id="invite-email"
-              type="email"
-              placeholder="person@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="invite-username"
+              type="text"
+              placeholder="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-describedby="invite-status"
               required
             />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={inviting || !email.trim()}
-            >
+            <button type="submit" className="btn btn-primary" disabled={!canInvite}>
               {inviting ? "Inviting…" : "Invite"}
             </button>
           </div>
+
+          {/* aria-live so the result of the check is announced, not just
+              shown - it appears without the user doing anything to ask. */}
+          <p
+            id="invite-status"
+            className={`people-feedback ${statusTone(inviteeStatus.kind)}`}
+            aria-live="polite"
+          >
+            {statusMessage(inviteeStatus)}
+          </p>
+
           {inviteMessage && (
             <p className="people-feedback is-success">{inviteMessage}</p>
           )}

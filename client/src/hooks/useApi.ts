@@ -1,5 +1,6 @@
 import type {
   ApiError,
+  InviteeLookup,
   BoardDetail,
   BoardMember,
   BoardSummary,
@@ -89,10 +90,14 @@ export const api = {
     remove: (id: number) =>
       request<void>(`/api/boards/${id}`, { method: "DELETE" }),
     listMembers: (id: number) => request<BoardMember[]>(`/api/boards/${id}/members`),
-    inviteMember: (id: number, email: string) =>
+    inviteMember: (id: number, username: string) =>
       request<{ userId: number; username: string; role: BoardMember["role"] }>(
         `/api/boards/${id}/members`,
-        { method: "POST", body: JSON.stringify({ email }) },
+        { method: "POST", body: JSON.stringify({ username }) },
+      ),
+    lookupInvitee: (id: number, username: string) =>
+      request<InviteeLookup>(
+        `/api/boards/${id}/members/lookup?username=${encodeURIComponent(username)}`,
       ),
     removeMember: (id: number, userId: number) =>
       request<void>(`/api/boards/${id}/members/${userId}`, {
