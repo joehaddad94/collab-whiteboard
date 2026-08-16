@@ -28,6 +28,19 @@ export function getViewTransform(width: number, height: number): ViewTransform {
   };
 }
 
+// Captured coordinates are full floats, and the trailing digits are noise
+// nobody can see - one decimal place is finer than a tenth of a pixel on a
+// board this size, and it roughly halves how much a stroke costs to stream,
+// store, and send back on join.
+const COORD_PRECISION = 10;
+
+export function quantize(point: Point): Point {
+  return {
+    x: Math.round(point.x * COORD_PRECISION) / COORD_PRECISION,
+    y: Math.round(point.y * COORD_PRECISION) / COORD_PRECISION,
+  };
+}
+
 export function screenToWorld(point: Point, view: ViewTransform): Point {
   if (view.scale <= 0) return { x: 0, y: 0 };
   return {

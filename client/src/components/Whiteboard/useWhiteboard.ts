@@ -5,6 +5,7 @@ import {
   WORLD_HEIGHT,
   WORLD_WIDTH,
   getViewTransform,
+  quantize,
   screenToWorld,
   type ViewTransform,
 } from "../../lib/worldView";
@@ -253,9 +254,13 @@ export function useWhiteboard({
 
   function getPoint(e: { clientX: number; clientY: number }): Point {
     const rect = canvasRef.current!.getBoundingClientRect();
-    return screenToWorld(
-      { x: e.clientX - rect.left, y: e.clientY - rect.top },
-      viewRef.current,
+    // Quantized once here, at the only place coordinates enter the app, so
+    // everything downstream (canvas, socket, database) carries the same values.
+    return quantize(
+      screenToWorld(
+        { x: e.clientX - rect.left, y: e.clientY - rect.top },
+        viewRef.current,
+      ),
     );
   }
 
