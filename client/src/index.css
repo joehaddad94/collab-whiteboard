@@ -631,46 +631,6 @@ a {
   margin: 12px 16px 0;
 }
 
-.invite-panel {
-  margin: 12px 16px 0;
-  padding: 14px 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-}
-.invite-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.invite-panel-head h3 {
-  font-size: 14px;
-}
-.invite-email-form {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.invite-email-form input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--ink-900);
-}
-.invite-feedback {
-  font-size: 12.5px;
-  margin: 0 0 8px;
-}
-.invite-feedback-success {
-  color: var(--success);
-}
-.invite-feedback-error {
-  color: var(--danger);
-}
 .dialog-overlay {
   position: fixed;
   inset: 0;
@@ -689,9 +649,15 @@ a {
   width: calc(100% - 40px);
   box-shadow: var(--shadow-float);
 }
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
 .dialog h3 {
   font-size: 16px;
-  margin-bottom: 8px;
 }
 .dialog p {
   font-size: 13.5px;
@@ -702,6 +668,100 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* Wider than a confirm prompt, because it holds a list rather than a
+   sentence. */
+.people-dialog {
+  max-width: 420px;
+}
+.people-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Long member lists scroll inside the dialog rather than pushing the invite
+     field off the bottom of the screen. */
+  max-height: 320px;
+  overflow-y: auto;
+}
+.people-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ink-200);
+}
+.people-row:last-child {
+  border-bottom: none;
+}
+.people-row-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+/* Ringed in the dialog's own background so it reads as a badge on the avatar
+   rather than a dot that happens to overlap it. */
+.people-online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 2px var(--bg-surface);
+}
+.people-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.people-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.people-invite-form {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.people-invite-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+.people-invite-row {
+  display: flex;
+  gap: 8px;
+}
+.people-invite-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+}
+.people-feedback {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+}
+.people-feedback.is-success {
+  color: var(--success);
+}
+.people-feedback.is-error {
+  color: var(--danger);
 }
 
 .board-canvas-area {
@@ -1041,7 +1101,7 @@ a {
     width: 48px;
   }
 
-  .invite-email-form {
+  .people-invite-row {
     flex-wrap: wrap;
   }
 }

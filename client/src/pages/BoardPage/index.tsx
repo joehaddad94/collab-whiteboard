@@ -2,7 +2,7 @@ import { Whiteboard } from "../../components/Whiteboard";
 import { Toolbar } from "../../components/Toolbar";
 import { CursorOverlay } from "../../components/CursorOverlay";
 import { UserList } from "../../components/UserList";
-import { InvitePanel } from "../../components/InvitePanel";
+import { PeopleDialog } from "../../components/PeopleDialog";
 import { ChatPanel } from "../../components/ChatPanel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { BackIcon, ChatIcon } from "../../components/icons";
@@ -15,7 +15,10 @@ export function BoardPage() {
     socket,
     connected,
     hasConnected,
+    connectedUsers,
+    members,
     onlineMembers,
+    refreshMembers,
     messages,
     sendMessage,
     socketError,
@@ -36,8 +39,8 @@ export function BoardPage() {
     confirmClearBoard,
     cancelClearBoard,
     showClearConfirm,
-    showInvitePanel,
-    setShowInvitePanel,
+    showPeople,
+    setShowPeople,
     showChat,
     setShowChat,
   } = useBoardPage();
@@ -70,15 +73,13 @@ export function BoardPage() {
 
         <div className="board-presence">
           <UserList members={onlineMembers} currentUserId={userId ?? -1} />
-          {board?.role === "owner" && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setShowInvitePanel((prev) => !prev)}
-            >
-              Invite
-            </button>
-          )}
+          <button
+            type="button"
+            className={`btn btn-ghost ${showPeople ? "btn-active" : ""}`}
+            onClick={() => setShowPeople((prev) => !prev)}
+          >
+            People
+          </button>
           <button
             type="button"
             className={`btn btn-ghost btn-icon ${showChat ? "btn-active" : ""}`}
@@ -91,8 +92,16 @@ export function BoardPage() {
         </div>
       </div>
 
-      {showInvitePanel && board && (
-        <InvitePanel boardId={board.id} onClose={() => setShowInvitePanel(false)} />
+      {showPeople && board && (
+        <PeopleDialog
+          boardId={board.id}
+          members={members}
+          connectedUsers={connectedUsers}
+          currentUserId={userId}
+          canManage={board.role === "owner"}
+          onMembersChanged={refreshMembers}
+          onClose={() => setShowPeople(false)}
+        />
       )}
 
       {showClearConfirm && (

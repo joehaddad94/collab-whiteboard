@@ -77,11 +77,20 @@ header (you're labeled "You"), live, as people join and leave. Move your
 mouse over the canvas and everyone else sees a labeled, colored cursor
 tracking it.
 
-### Invite
-Owners only: the "Invite" button opens a panel to add someone by email —
-they need an existing account. They're added as an Editor immediately (no
-accept step) and the board shows up in their list next time they load the
-app, or as a live update if they're online.
+### People
+The "People" button opens a dialog listing everyone with access to the board,
+with their role and a green dot for anyone currently connected. Anyone on the
+board can open it — seeing who else has access isn't an owner-only concern.
+
+Owners additionally get to invite and remove from here. Invite is by email and
+the person needs an existing account; they're added as an Editor immediately,
+with no accept step, and the list refreshes so they appear in it. Removing
+takes a second click to confirm in the row, and takes effect immediately — if
+that person is on the board right now, they're dropped from it.
+
+Note this is *membership*, which is a different question from *presence*: the
+avatar chips in the header show who is connected this second and update live
+over the socket, while this dialog shows who is allowed in.
 
 ### Chat
 Toggle the chat panel from the header icon. Per-board, persisted (not just

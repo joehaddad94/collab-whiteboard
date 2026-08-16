@@ -1,4 +1,4 @@
-import { useConfirmDialog } from "./useConfirmDialog";
+import { Dialog } from "../Dialog";
 
 interface ConfirmDialogProps {
   title: string;
@@ -17,20 +17,12 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  useConfirmDialog({ onCancel });
-
   return (
-    <div className="dialog-overlay" onClick={onCancel}>
-      <div
-        className="dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 id="confirm-dialog-title">{title}</h3>
-        <p>{message}</p>
-        <div className="dialog-actions">
+    <Dialog
+      title={title}
+      onClose={onCancel}
+      actions={
+        <>
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
             Cancel
           </button>
@@ -41,8 +33,10 @@ export function ConfirmDialog({
           >
             {confirmLabel}
           </button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <p>{message}</p>
+    </Dialog>
   );
 }

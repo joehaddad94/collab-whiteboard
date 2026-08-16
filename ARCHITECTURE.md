@@ -37,6 +37,8 @@ entries are not rewritten after the fact.
   (ADR-024, 025, 026, 028)
 - Persistence is now the server autosaving its own board session, not a client
   pressing Save — including a flush when the last user leaves (ADR-039/041)
+- Membership management now has a UI (ADR-042) - the remove-member endpoint had
+  been implemented and unreachable since ADR-023
 - Post-submission-review pass: `schema.sql` shipped with the build, in-progress
   strokes in the join snapshot, presence tracked per user rather than per socket,
   raised JSON body limit with an honest 413 (ADR-034, 035, 036, 038)
@@ -1541,6 +1543,68 @@ failure case and then needed machinery to handle it.
 **Trade-offs:** No way to force a write before, say, restarting the server in
 development — marginal, since a `tsx watch` restart discards the session either
 way.
+
+---
+
+## ADR-042: Membership gets a People dialog; the presence chips stay put
+
+**Decision:** `InvitePanel` is replaced by a `PeopleDialog` built on a new
+shared `Dialog` shell. It lists everyone with access — avatar, name, role
+badge, and a green dot for anyone currently connected — with invite and remove
+for owners. Anyone on the board can open it; only owners see the management
+controls. Membership is refetched after each mutation via a `refreshMembers()`
+callback on `useBoardPage`, rather than pushed over the socket. The header
+presence chips are untouched.
+
+**Context:** The invite UI had three problems. It was a banner rendered inline
+between the header and the canvas, so opening it pushed the canvas down, fired
+`resizeCanvas`, and visibly rescaled the drawing. It was titled "Invite
+people" but contained no people — just an email field, with feedback as a line
+of text that never cleared and no visible result. And `DELETE
+/api/boards/:id/members/:userId` had been implemented, documented, and wired to
+evict live sockets (ADR-023), but nothing in the app ever called it: there was
+no way to remove anyone from a board.
+
+The presence chips staying is a hard constraint, not a preference. The
+challenge lists "display a list of all users currently connected to the
+whiteboard and update it in real-time as users join or leave" as a *core*
+requirement, in both the Front-end and User Management sections. Moving that
+list into a dialog would trade a core requirement for an optional one. So the
+two are deliberately kept at different altitudes: chips answer "who is here
+right now", the dialog answers "who is allowed in, and change it".
+
+**Alternatives considered:**
+- **Fix the banner in place** — smallest change, but keeps the layout shift
+  and the canvas rescale that made opening it feel like it broke something.
+- **A popover anchored to the button** — no layout shift either, and the
+  familiar pattern, but it needs click-outside, escape, and positioning that
+  survives a narrow screen. A modal gets the same result reusing machinery
+  the app already had.
+- **Push membership over the socket** (a `members-changed` event) — more in
+  keeping with how the rest of the app stays in sync, and rejected as more
+  than this needs: membership changes are rare, initiated by the person
+  looking at the dialog, and a refetch after the mutation they just performed
+  is immediate from their point of view.
+- **Invite by username** rather than email, matching how the app identifies
+  people everywhere else — wanted, but it needs a user-search endpoint that
+  doesn't exist. Left as follow-up.
+
+**Trade-offs:** A second owner's changes aren't seen until something refetches,
+which is the accepted cost of not adding the socket event. Removal is confirmed
+inline in the row rather than through `ConfirmDialog`, to avoid stacking two
+overlays — less consistent with how deletion is confirmed elsewhere, but
+better than a modal on top of a modal. And the dialog sorts owner-first in the
+client because the server's `ORDER BY BoardMember.role` sorts "editor" before
+"owner" alphabetically; the query was left alone rather than risk the header
+badges that read the same endpoint.
+
+**Also in this change:** the dialog shell was extracted so `ConfirmDialog` and
+`PeopleDialog` share one implementation of the backdrop, escape/overlay-click
+dismissal, and `role="dialog"` wiring — the parts that are easy to get subtly
+different are exactly the accessibility ones. `useConfirmDialog` became
+`useDialogDismiss`, which describes what it does rather than where it was first
+used, and the dialog title id is now generated with `useId()` instead of being
+hardcoded, so two open dialogs can't both claim it.
 
 ---
 

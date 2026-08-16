@@ -27,7 +27,7 @@ export function useBoardPage() {
   const hasHydratedRef = useRef(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
 
-  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [showPeople, setShowPeople] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -68,21 +68,21 @@ export function useBoardPage() {
     };
   }, [boardId]);
 
-  useEffect(() => {
+  // Membership changes come from REST, not sockets, so there's nothing to push
+  // an update - the People dialog calls this after inviting or removing. It
+  // also refreshes the header's role badges, which read the same list.
+  const refreshMembers = useCallback(async () => {
     if (!Number.isInteger(boardId)) return;
-    let cancelled = false;
-    api.boards
-      .listMembers(boardId)
-      .then((list) => {
-        if (!cancelled) setMembers(list);
-      })
-      .catch(() => {
-        // Non-critical: role badges just won't show if this fails.
-      });
-    return () => {
-      cancelled = true;
-    };
+    try {
+      setMembers(await api.boards.listMembers(boardId));
+    } catch {
+      // Non-critical: role badges just won't show if this fails.
+    }
   }, [boardId]);
+
+  useEffect(() => {
+    void refreshMembers();
+  }, [refreshMembers]);
 
   useEffect(() => {
     if (leaveReason) navigate("/boards");
@@ -155,7 +155,9 @@ export function useBoardPage() {
     connected,
     hasConnected,
     connectedUsers,
+    members,
     onlineMembers,
+    refreshMembers,
     messages,
     sendMessage,
     socketError,
@@ -176,8 +178,8 @@ export function useBoardPage() {
     confirmClearBoard,
     cancelClearBoard,
     showClearConfirm,
-    showInvitePanel,
-    setShowInvitePanel,
+    showPeople,
+    setShowPeople,
     showChat,
     setShowChat,
   };

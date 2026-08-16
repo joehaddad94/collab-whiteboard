@@ -94,6 +94,10 @@ export const api = {
         `/api/boards/${id}/members`,
         { method: "POST", body: JSON.stringify({ email }) },
       ),
+    removeMember: (id: number, userId: number) =>
+      request<void>(`/api/boards/${id}/members/${userId}`, {
+        method: "DELETE",
+      }),
   },
 };
 
