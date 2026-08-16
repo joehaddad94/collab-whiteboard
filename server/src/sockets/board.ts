@@ -5,6 +5,8 @@ import { AppError } from "../errors.js";
 import {
   getSession,
   getOrCreateSession,
+  hasUserConnection,
+  listUniqueUsers,
   removeSessionIfEmpty,
 } from "./boardSessions.js";
 import type { Stroke } from "../modules/boards/boards.types.js";
@@ -79,6 +81,7 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       const session = getOrCreateSession(boardId, () =>
         boardsService.getBoardStrokes(boardId),
       );
+      const alreadyPresent = hasUserConnection(session, user.userId);
       session.connectedUsers.set(socket.id, {
         userId: user.userId,
         username: user.username,
@@ -92,14 +95,18 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
       socket.emit("board-joined", {
         strokes: session.strokes,
         inProgressStrokes: Array.from(session.inProgressStrokes.values()),
-        users: Array.from(session.connectedUsers.values()),
+        users: listUniqueUsers(session),
         messages: chatService.getRecentMessages(boardId),
       });
 
-      socket.to(roomName).emit("user-joined", {
-        userId: user.userId,
-        username: user.username,
-      });
+      // Only announce an arrival that changes the room's presence - a user's
+      // second tab is not a new person joining.
+      if (!alreadyPresent) {
+        socket.to(roomName).emit("user-joined", {
+          userId: user.userId,
+          username: user.username,
+        });
+      }
     }),
   );
 
@@ -327,6 +334,11 @@ function leaveBoard(socket: Socket, boardId: number) {
     socket.to(roomName).emit("stroke-removed", { strokeId });
   }
 
-  socket.to(roomName).emit("user-left", { userId: user.userId });
+  // Same reasoning as the join side: only announce the departure once the
+  // user's last socket for this board is gone, so closing one of two tabs
+  // doesn't remove them from everyone else's presence list.
+  if (!session || !hasUserConnection(session, user.userId)) {
+    socket.to(roomName).emit("user-left", { userId: user.userId });
+  }
   removeSessionIfEmpty(boardId);
 }

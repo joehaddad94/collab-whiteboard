@@ -63,8 +63,13 @@ export function useBoardSocket(boardId: number) {
       setMessages((prev) => [...prev, message]);
     });
 
+    // The server already suppresses user-joined for a user who's still present
+    // on another socket; deduping here too keeps presence correct if a join
+    // and a reconnect ever cross on the wire.
     socket.on("user-joined", (user: ConnectedUser) => {
-      setConnectedUsers((prev) => [...prev, user]);
+      setConnectedUsers((prev) =>
+        prev.some((u) => u.userId === user.userId) ? prev : [...prev, user],
+      );
     });
 
     socket.on("user-left", ({ userId }: { userId: number }) => {

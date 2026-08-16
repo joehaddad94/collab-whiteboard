@@ -123,9 +123,9 @@ there's no separate WS-level login step.
 
 | Event | Payload | Notes |
 |---|---|---|
-| `board-joined` | `{ strokes, inProgressStrokes, users, messages }` | Full current state, sent only to you in reply to `join-board`. `inProgressStrokes` are strokes other people are drawing *right now* — they aren't in `strokes` yet, and the `stroke-point`/`stroke-end` events that follow carry only a `strokeId`, so a client joining mid-stroke needs them to have anything to attach those to. Also what a reconnect resyncs from — there's no "replay missed events," every join/rejoin gets the complete current state. |
-| `user-joined` | `{ userId, username }` | Broadcast to the room when someone else joins. |
-| `user-left` | `{ userId }` | Broadcast on `leave-board` or disconnect. |
+| `board-joined` | `{ strokes, inProgressStrokes, users, messages }` | Full current state, sent only to you in reply to `join-board`. `inProgressStrokes` are strokes other people are drawing *right now* — they aren't in `strokes` yet, and the `stroke-point`/`stroke-end` events that follow carry only a `strokeId`, so a client joining mid-stroke needs them to have anything to attach those to. `users` is deduplicated per user, not per socket. Also what a reconnect resyncs from — there's no "replay missed events," every join/rejoin gets the complete current state. |
+| `user-joined` | `{ userId, username }` | Broadcast to the room when someone else joins. Sent only for a user who wasn't already on the board — a second tab doesn't re-announce them. |
+| `user-left` | `{ userId }` | Broadcast on `leave-board` or disconnect, and only once the user's **last** socket for that board is gone — closing one of two tabs doesn't remove them from everyone's presence list. |
 | `stroke-start` | full stroke object | Rebroadcast to everyone *except* the sender. |
 | `stroke-point` | `{ strokeId, point }` | Rebroadcast, sender excluded. |
 | `stroke-end` | `{ strokeId }` | Rebroadcast, sender excluded. |
