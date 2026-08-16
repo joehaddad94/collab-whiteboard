@@ -20,18 +20,24 @@ export const UserList = memo(function UserList({ members, currentUserId }: UserL
 
   return (
     <>
-      {members.map((m) => (
-        <span key={m.userId} className="presence-chip">
-          <Avatar
-            name={m.username}
-            userId={m.userId}
-            size={18}
-            color={m.userId === currentUserId ? "var(--accent)" : undefined}
-          />
-          {m.userId === currentUserId ? "You" : m.username}
-          {m.role && <span className="presence-chip-role">{m.role}</span>}
-        </span>
-      ))}
+      {members.map((m) => {
+        const isSelf = m.userId === currentUserId;
+        return (
+          <span
+            key={m.userId}
+            className={`presence-chip ${isSelf ? "presence-chip-self" : ""}`}
+          >
+            <Avatar
+              name={m.username}
+              userId={m.userId}
+              size={20}
+              color={isSelf ? "var(--accent)" : undefined}
+            />
+            {isSelf ? "You" : m.username}
+            {m.role && <span className="presence-chip-role">{m.role}</span>}
+          </span>
+        );
+      })}
     </>
   );
 });

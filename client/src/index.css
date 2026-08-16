@@ -124,6 +124,7 @@ a {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 9px 16px;
   border-radius: var(--radius-sm);
@@ -132,7 +133,8 @@ a {
   color: var(--ink-900);
   font-weight: 600;
   font-size: 14px;
-  transition: border-color 0.12s, background 0.12s;
+  line-height: 1;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .btn:hover {
   border-color: var(--ink-400);
@@ -145,20 +147,42 @@ a {
 .btn-primary:hover {
   filter: brightness(1.06);
 }
+/* Ghost still means "secondary", not "invisible" - it keeps a real outline so
+   it reads as something you can press, and only the fill is held back. */
 .btn-ghost {
-  border-color: transparent;
+  border-color: var(--border);
   background: transparent;
+  color: var(--ink-700);
 }
 .btn-ghost:hover {
   background: var(--bg-sunken);
-  border-color: transparent;
+  border-color: var(--ink-400);
+  color: var(--ink-900);
 }
-.btn-active {
+.btn-active,
+.btn-ghost.btn-active {
   background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+.btn-active:hover,
+.btn-ghost.btn-active:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--accent);
 }
 .btn-danger {
   color: var(--danger);
+}
+/* Ghost's hover colour is more specific than .btn-danger, so without this a
+   destructive action would lose its red exactly when you point at it. */
+.btn-ghost.btn-danger,
+.btn-ghost.btn-danger:hover {
+  color: var(--danger);
+}
+.btn-ghost.btn-danger:hover {
+  background: var(--danger-soft);
+  border-color: var(--danger);
 }
 .btn-danger-solid {
   background: var(--danger);
@@ -489,32 +513,84 @@ a {
 .board-presence {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
+
+/* Everything in this row - presence chips, Invite, the chat toggle - is pinned
+   to one height and one radius, so it reads as a single strip of controls
+   instead of three differently-shaped things that happen to sit in a line.
+   The chips were 28px against ~38px buttons before, which is what made the row
+   look off-centre. */
+.board-page-toolbar .btn,
+.presence-chip,
 .board-presence-empty {
+  height: 30px;
+  border-radius: 999px;
+}
+.board-page-toolbar .btn {
+  padding: 0 14px;
+  font-size: 13px;
+}
+.board-page-toolbar .btn-icon {
+  width: 30px;
+  padding: 0;
+}
+
+.board-presence-empty {
+  display: inline-flex;
+  align-items: center;
   font-size: 12.5px;
   color: var(--ink-400);
 }
+
 .presence-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 7px;
+  /* Tighter on the left so the avatar sits just inside the pill, looser on the
+     right where the role badge needs room to breathe. */
+  padding: 0 5px 0 5px;
+  font-size: 12.5px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent-soft-border);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ink-900);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
 }
+
+/* Your own chip carries the accent - a more useful distinction at a glance
+   than colouring by role, which the badge already says in words. */
+.presence-chip-self {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+/* A quiet pill rather than loose text: same sans face as the name, so the two
+   share a baseline instead of the mono/sans mismatch that made it look
+   misaligned at this size. */
 .presence-chip-role {
-  font-family: var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--ink-400);
   font-size: 9.5px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  font-weight: 600;
-  opacity: 0.75;
+  line-height: 1;
+}
+.presence-chip-self .presence-chip-role {
+  background: transparent;
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+  opacity: 0.85;
 }
 .board-page-banner {
   margin: 12px 16px 0;
