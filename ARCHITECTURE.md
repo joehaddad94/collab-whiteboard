@@ -15,13 +15,13 @@ entries are not rewritten after the fact.
 
 ---
 
-## Status (updated 2026-08-14)
+## Status (updated 2026-08-16)
 
 ### Backend — done, feature-complete
 - Project skeleton: TypeScript, `node:sqlite`, `db/schema.sql`, `.env`/`.env.example` (ADR-011–014)
-- Auth: signup/login/logout/me, email + `username` (login is username-only, not
-  email — ADR-031), JWT httpOnly cookie, auth middleware, Socket.io handshake auth,
-  async bcrypt (ADR-008/015/022/027/031)
+- Auth: signup/login/logout/me, email + `username` (login accepts either as the
+  identifier — ADR-031/033), JWT httpOnly cookie, auth middleware, Socket.io
+  handshake auth, async bcrypt (ADR-008/015/022/027/031/033)
 - Board CRUD REST routes: list/create/get/rename/delete/save (ADR-016)
 - Membership REST routes: list/invite-by-email/remove (ADR-009/016/022; invite-link
   regenerate/join removed in ADR-031 — not in the requirements)
@@ -35,27 +35,48 @@ entries are not rewritten after the fact.
 - Backend audit fixes: cross-board room-switch cleanup, stroke shape validation on
   save, abandoned in-progress-stroke leak fixed, minor query/error-message cleanups
   (ADR-024, 025, 026, 028)
+- Persistence is now the server autosaving its own board session, not a client
+  pressing Save — including a flush when the last user leaves (ADR-039/041)
+- Post-submission-review pass: `schema.sql` shipped with the build, in-progress
+  strokes in the join snapshot, presence tracked per user rather than per socket,
+  raised JSON body limit with an honest 413 (ADR-034, 035, 036, 038)
 
 ### Backend — not done
 - Nothing outstanding from the original feature set. An automated test suite is the
   one known gap — deliberately deferred by Joe until requirements are otherwise done.
+  Socket behaviour has so far been checked with throwaway scripts driving two real
+  Socket.io clients against the built server, which is not the same thing as a suite.
 
 ### Frontend — done, feature-complete
 Built via a separate Claude Code conversation working task-by-task against this
 backend, each piece tested live against the running server before moving on (see
-ADR-030). Auth (email + `username`, login is username-only — ADR-031), board list
+ADR-030). Auth (email + `username`, login by either — ADR-031/033), board list
 CRUD, `BoardPage` with a live socket connection (`useBoardSocket`), `Whiteboard`
 canvas with full real-time drawing sync, `Toolbar`, undo/redo/clear (behind a real
 `ConfirmDialog`, not a native browser `confirm()`), cursor presence overlay,
-save/load to REST, `UserList` with roles, invite-by-email (`InvitePanel` — the
+save/load, `UserList` with roles, invite-by-email (`InvitePanel` — the
 invite-link half and `JoinBoardPage` were removed in ADR-031), and `ChatPanel`.
 Styled against the previously-approved UX mockup, including a responsive breakpoint
 for narrow screens. An automated test suite is not part of this — same deliberate
 gap as the backend.
 
-### Not started at all
-- README (setup, running locally, REST/WebSocket API docs, assumptions, technical
-  decisions) — required for submission, per Anexya's review requirements
+Since then: strokes and cursors moved to a fixed world coordinate space so
+collaborators on different-sized screens see the same drawing (ADR-037), the Save
+button was removed in favour of autosave (ADR-041), and drawing is now paused with a
+visible notice while the socket is disconnected instead of being silently discarded
+on reconnect (ADR-040).
+
+### Documentation — done
+- Root, server, and client READMEs (setup, features, REST/WebSocket API, auth), plus
+  Swagger UI at `/api-docs` served from `openapi.yaml` — the submission requirement
+  from Anexya's review process.
+
+### Not verified
+- Everything above is verified by typechecks, builds, and scripts driving the real
+  socket API. The **UI has not been re-checked in a browser** since the coordinate,
+  autosave, and disconnect changes — worth a two-tab pass before submitting.
+- Boards saved before ADR-037 hold old pixel coordinates and will render wrong; for
+  a dev database, deleting the sqlite file is the fix.
 
 ---
 
@@ -1241,6 +1262,285 @@ flow (no password reset exists) to fall back on.
 field accepts. Two lookups (`findUserByEmail` then `findUserByUsername`)
 run on unrecognized input instead of one, which is negligible at this
 scale and on unique-indexed columns.
+
+---
+
+## ADR-034: Ship `schema.sql` with the compiled build
+
+**Decision:** `npm run build` now runs `tsc` followed by a `copy-schema` step that
+copies `src/db/schema.sql` into `dist/db/`. Plain `node -e` with
+`fs.copyFileSync`, so it needs no extra dependency and works in both cmd and sh.
+
+**Context:** Found by actually running the compiled server rather than the dev
+one. `tsc` only emits `.js`, so `dist/db/schema.sql` never existed, and
+`db/index.ts` reads it at import time relative to `__dirname` — meaning
+`npm run build && npm start` died with `ENOENT` before the server ever listened.
+Only `npm run dev` worked, because `tsx` runs straight from `src/`, which is
+exactly why this went unnoticed for so long. `openapi.yaml` was unaffected: it
+resolves as `../openapi.yaml`, which lands on the real file from `dist/`.
+
+**Alternatives considered:**
+- **Resolve the schema back into `src/` at runtime** — rejected: it makes `dist/`
+  depend on source files being present next to it, so the build stops being
+  something you could deploy on its own.
+- **Inline the schema as a TypeScript string** — would make the problem
+  impossible by construction, but loses `schema.sql` as a readable artifact and
+  the plain-SQL-file approach ADR-012 chose deliberately.
+
+**Trade-offs:** The build is no longer just `tsc`, so any future non-TS asset
+needs remembering too. Small enough at one file; a real asset pipeline would be
+overkill here.
+
+---
+
+## ADR-035: `board-joined` carries in-progress strokes
+
+**Decision:** The join snapshot is now
+`{ strokes, inProgressStrokes, users, messages }`. `inProgressStrokes` is the
+session's live `inProgressStrokes` map serialized as an array; the client seeds
+its remote-in-progress map from it. Two consequences follow: `redrawAll()` on the
+client paints unfinished strokes as well as committed ones, and `leaveBoard()`
+emits `stroke-removed` for any stroke its owner abandoned mid-draw.
+
+**Context:** A client joining while someone was mid-stroke lost that stroke
+entirely. `strokes` holds only finished strokes — one still being drawn lives in
+`inProgressStrokes` until its `stroke-end` — and the `stroke-point`/`stroke-end`
+events that follow carry only a `strokeId`, so the joiner had nothing to attach
+them to and dropped the stroke silently. The server had it the whole time; the
+joiner only saw it after a full reload.
+
+Including them forced the other two changes. Once unfinished strokes are real
+client-side state, a redraw that ignored them would blank out live drawing on
+every resize or undo — and once they survive a redraw, a stroke whose owner
+disconnects has to be retractable, or it sits on every other canvas as a fragment
+that can never be finished, undone, or redrawn away. Reusing `stroke-removed`
+rather than adding a `stroke-abandoned` event keeps the contract the same size:
+the client's handling is identical either way.
+
+**Alternatives considered:**
+- **Have the server broadcast the finished stroke on `stroke-end`** instead of
+  just the id, so a late joiner could pick it up without the snapshot — rejected:
+  it re-sends every stroke's full point array to every client that already
+  streamed it point by point, to fix a case the snapshot handles once.
+- **Have late joiners ignore strokes they missed the start of** — the current
+  behaviour, made explicit. Rejected: "correct by construction on join" (ADR-017)
+  is the whole resync model, and this was a hole in it.
+
+**Trade-offs:** The join payload is slightly larger, bounded by how many people
+are drawing at that instant — negligible next to `strokes` itself.
+
+---
+
+## ADR-036: Presence is per user, not per socket
+
+**Decision:** `session.connectedUsers` stays keyed by socket id, but presence is
+derived through two helpers — `listUniqueUsers()` and `hasUserConnection()`.
+`board-joined` sends a deduplicated user list, `user-joined` is only broadcast for
+a user who wasn't already on the board, and `user-left` only once their last
+socket for that board is gone. The client dedupes `user-joined` as well.
+
+**Context:** One user can hold several sockets on one board — two tabs, or a
+reconnect racing the old socket's cleanup. Presence was read straight off the
+socket-keyed map, so a second tab listed the same person twice (with a duplicate
+React key in `UserList`), and closing *either* tab emitted `user-left` and removed
+them from everyone's list while they were still connected in the other. Opening a
+second tab is the first thing anyone does to test a collaborative app, including
+in the README's own quick-start instructions.
+
+**Alternatives considered:**
+- **Re-key `connectedUsers` by user id** — simpler for presence, but eviction
+  (ADR-023) and `disconnect` both work per-socket and need to find the exact
+  socket, so this would have traded one lookup problem for another.
+- **Deduplicate on the client only** — would fix the visible duplicate, but not
+  the `user-left` bug, since the server would still send it on the first tab
+  closing.
+
+**Trade-offs:** Presence reads are now O(sockets on the board) instead of a direct
+map read. Irrelevant at any realistic board size.
+
+---
+
+## ADR-037: Board coordinate space — fixed world units, fit to container
+
+**Decision:** The board is a fixed 1920×1080 logical surface. Stroke points,
+`brushSize`, and cursor positions are all in those units. Each client computes a
+fit-to-container transform (`getViewTransform` in `client/src/lib/worldView.ts`):
+a single uniform scale for both axes plus centering. The canvas context carries
+the world→device transform, so drawing code is unchanged and brush width scales
+for free, and drawing is clipped to the page rect. The page is drawn as a visible
+sheet (`.whiteboard-page`) with the surround left plain.
+
+**Context:** Stroke points were raw CSS pixels relative to whatever size that
+client's canvas happened to be — which is only a shared coordinate space if
+everyone's window is identical. Two collaborators on different screens saw the
+same stroke in different places, and because `redrawAll` painted stored points
+as-is, resizing your own window shifted existing content around underneath you.
+Directly at odds with the "responsive design for different screen sizes"
+requirement, which the app otherwise claimed to meet.
+
+Fitting leaves margin on any window that isn't 16:9, and margin that looks
+drawable but isn't would be a worse bug than the one being fixed — hence the clip
+and the visible page. `CursorOverlay` is a sibling of `Whiteboard` rather than a
+child, so instead of threading the transform through `BoardPage` it measures its
+own box, which is laid out to cover exactly the same rect as the canvas.
+
+**Alternatives considered:**
+- **Normalize to 0–1 fractions of the canvas** — the obvious cheap fix, rejected:
+  with a non-uniform scale a circle drawn on a wide screen becomes an ellipse on
+  a narrow one. Uniform scale is the whole point.
+- **Scale by width only, letting height run free** — no dead margin and no clip
+  needed, but collaborators then see different amounts of the board vertically,
+  which reintroduces "we're not looking at the same thing" in one axis.
+- **An infinite/pannable canvas** — what a real whiteboard would do, and it makes
+  the whole question disappear. Rejected as scope: it needs viewport state, pan
+  and zoom controls, and a way to find other people's content.
+
+**Trade-offs:** The board is now a bounded page rather than unlimited space, and
+boards saved before this change hold pixel coordinates that will render wrong —
+there's no migration, since the only data is a dev database.
+
+---
+
+## ADR-038: Board payloads outgrew the defaults — body limit, quantized coordinates
+
+**Decision:** `express.json()` takes an explicit 5mb limit, body-parser's own
+errors (`entity.too.large`, `entity.parse.failed`) are mapped to their real status
+with a useful message instead of falling through to the 500 branch, and captured
+coordinates are quantized to one decimal place at the single point they enter the
+app (`quantize()` in `worldView.ts`).
+
+**Context:** A real 413 crash: saving a board threw
+`PayloadTooLargeError ... limit: 102400`. Body-parser's default is 100kb, and a
+measured board of ~50 strokes at 40 points is already ~97kb — so this fired during
+ordinary use, not on anything unusual. Worse, because body-parser raises its own
+error shape rather than an `AppError`, the client was told "Internal server error"
+and the server logged a stack trace for what is squarely a bad request.
+
+Quantizing attacks the same problem from the other end: a captured point carried
+full float precision (`x: 743.2847290039062`) and every digit past the first
+decimal was streamed to every collaborator, stored, and sent back on join. At
+1920×1080 world units, 0.1 is under a tenth of a pixel — invisible, and it roughly
+halves the size of a stroke (a measured 400-stroke board: ~1.1mb → ~560kb).
+
+**Alternatives considered:**
+- **Compress the payload** — real gains available, but adds a codec on both sides
+  to avoid sending digits that shouldn't have been sent in the first place.
+- **Cap strokes or points per board** — rejected: it fixes payload size by
+  silently discarding drawing, which is worse than the problem.
+
+**Trade-offs:** 5mb is a stop-something-absurd ceiling, not a budget, and
+`isValidStroke` still doesn't bound how many points a stroke may hold — a member
+could deliberately store a very large board. Acceptable for a members-only board
+in this context; a real deployment would want per-board size limits.
+
+---
+
+## ADR-039: Server-side autosave replaces saving on demand
+
+**Decision:** The server persists its own board session. Mutating events
+(`stroke-end`, `undo`, `redo`, `clear-board`) mark the board dirty; a 2s debounce
+writes `Board.data`, with a 15s max-wait so a board that never goes quiet is still
+written; and `flushPendingSave()` runs when the last user leaves, before the
+session is discarded. A `board-saved { boardId, savedAt }` event tells the room,
+and drives the frontend's save indicator. Lives in `sockets/boardAutosave.ts`.
+
+**Context:** This revises ADR-006 and ADR-007, both of which state that only an
+explicit save writes to the database. That was a deliberate decision and it had a
+real defect: a board's live strokes existed only in the in-memory session, and
+that session is destroyed when the last person leaves. So a board everyone closed
+without pressing Save lost the work outright — the row still held whatever was
+there at the last manual save, frequently an empty array. Nothing in the challenge
+requires this (save/load is a bonus item, and an explicit Save satisfied it), but
+losing work by default is not a defensible design.
+
+The data model from ADR-006 is unchanged — still one JSON blob per board, written
+whole. What changed is who triggers the write, and when.
+
+**Alternatives considered:**
+- **Debounced autosave in the client**, reusing `PUT /:id/data` — the smaller
+  change, and rejected: with several people on a board that's N clients racing to
+  write the same row with their own copy of it, and if everyone closes their tab
+  the last debounce may simply never fire, leaving the exact case this exists to
+  fix still broken. Server-side there is exactly one writer, and it can act at the
+  moment the session is discarded.
+- **Persist on every `stroke-end`** — simplest to reason about, but the schema
+  stores strokes as one JSON column (ADR-006), so every write reserializes the
+  whole board. Bad fit unless the data model changes too.
+- **Flush only on last-user-leave, no debounce** — genuinely considered, and it
+  closes the loss case above with far less machinery. Rejected because it does
+  nothing for a crash or restart mid-session, which in development happens on
+  every file save via `tsx watch`.
+
+**Trade-offs:** A board is now written repeatedly during a long session rather
+than once on demand — cheap here, since each write is a single row update and the
+debounce collapses bursts. A crash can still lose up to ~2s of drawing. And undo
+history is still session-scoped (ADR-007 stands): autosave persists the resulting
+state, never the stacks.
+
+---
+
+## ADR-040: Drawing is paused while the socket is disconnected
+
+**Decision:** The canvas stops accepting pointer input while `connected` is false,
+and says so with a notice that distinguishes a first connect from a reconnect. A
+stroke in progress when the connection drops is abandoned rather than finished,
+and cursor emits stop too.
+
+**Context:** Nothing gated the canvas on connection state, so a dropped socket
+left the whiteboard fully interactive. Strokes drawn while disconnected
+accumulated locally and looked entirely normal — but the server never received
+them, and on reconnect `handleBoardJoined` replaces local state with the
+authoritative board, so they vanished with no warning beforehand and no
+explanation after. Silently discarding a user's work is the worst version of this.
+
+This is the challenge's "error handling for disconnections" and "clear error
+messages or notifications to users" requirement. The reconnect itself was already
+handled — Socket.io's backoff plus a fresh `board-joined` (ADR-017/019) — but the
+user was never told that drawing had stopped working. Cursor emits are included
+because Socket.io buffers emits made while disconnected and flushes them on
+reconnect, so staying quiet also avoids a backlog of stale cursor positions
+arriving at once.
+
+**Alternatives considered:**
+- **Queue offline strokes and replay them on reconnect** — preserves the work
+  instead of refusing it, and rejected: it breaks the resync model everything else
+  depends on (ADR-017's "every join gets complete current state, no event
+  replay"), and it reorders strokes against everyone else's timeline.
+- **Let drawing continue and warn afterwards** — rejected: telling someone their
+  last two minutes are gone is worse than not letting them draw into a void.
+
+**Trade-offs:** A brief network blip now blocks drawing for the moment it takes to
+reconnect, where before it appeared to work. That appearance was the bug.
+
+---
+
+## ADR-041: Remove the Save button
+
+**Decision:** The Save button is gone, along with the `save-board` event,
+`requestSave`, the save-confirmation timeout, `saveError` and its banner, the
+now-unreachable `"saving"` status, and the unused `api.boards.saveData`. The save
+indicator — "Saved" / "Unsaved changes" — is the entire interface to persistence.
+`PUT /:id/data` remains as documented REST surface for a non-socket client.
+
+**Context:** ADR-039 kept the button as a "write it now" shortcut, on the
+reasoning that a visible control demonstrates the save/load bonus to a reviewer.
+On inspection that didn't hold up. With autosave running the button buys the user
+up to two seconds, and it was carrying real weight for it: a socket emit isn't
+acknowledged, so pressing Save could sit on "Saving…" forever, which is why it
+needed an 8s confirmation timeout, an error state, and a banner. Autosave has no
+such failure mode — a failed write simply doesn't emit `board-saved`, the status
+stays "Unsaved changes", and the next change retries. The button introduced a
+failure case and then needed machinery to handle it.
+
+**Alternatives considered:**
+- **Keep it for demonstrability** — the original reasoning. Rejected: the save
+  indicator demonstrates persistence just as well, and "it saves itself, like
+  Google Docs" is a better answer than a button that does nothing the system
+  wasn't about to do anyway.
+
+**Trade-offs:** No way to force a write before, say, restarting the server in
+development — marginal, since a `tsx watch` restart discards the session either
+way.
 
 ---
 
