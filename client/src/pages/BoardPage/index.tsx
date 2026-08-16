@@ -17,8 +17,11 @@ export function BoardPage() {
     hasConnected,
     connectedUsers,
     members,
+    membersLoading,
+    membersError,
     onlineMembers,
     refreshMembers,
+    handleLeftBoard,
     messages,
     sendMessage,
     socketError,
@@ -79,6 +82,9 @@ export function BoardPage() {
             onClick={() => setShowPeople((prev) => !prev)}
           >
             People
+            {members.length > 0 && (
+              <span className="btn-count">{members.length}</span>
+            )}
           </button>
           <button
             type="button"
@@ -96,10 +102,13 @@ export function BoardPage() {
         <PeopleDialog
           boardId={board.id}
           members={members}
+          membersLoading={membersLoading}
+          membersError={membersError}
           connectedUsers={connectedUsers}
           currentUserId={userId}
           canManage={board.role === "owner"}
           onMembersChanged={refreshMembers}
+          onLeft={handleLeftBoard}
           onClose={() => setShowPeople(false)}
         />
       )}

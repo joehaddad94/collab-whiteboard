@@ -766,6 +766,68 @@ a {
 .people-feedback.is-muted {
   color: var(--ink-400);
 }
+
+/* Loading / failed / explanatory copy inside the dialog. */
+.people-state {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-400);
+}
+.people-state.is-error {
+  color: var(--danger);
+}
+.people-note {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+/* Full-width under its own row, so a failure sits with the person it's about
+   rather than at the bottom of a list that may have scrolled. */
+.people-row-error {
+  flex: 0 0 100%;
+  padding-top: 2px;
+  font-size: 12px;
+  color: var(--danger);
+}
+.people-row {
+  flex-wrap: wrap;
+}
+
+/* Count on the People button - a quiet pill rather than a second label. */
+.btn-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ink-200);
+  color: var(--ink-600);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+.btn-active .btn-count {
+  background: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.page-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-700);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  margin: 0 0 16px;
+}
 /* Reserve the line so the form doesn't jump as the check resolves. */
 #invite-status {
   min-height: 1.25em;

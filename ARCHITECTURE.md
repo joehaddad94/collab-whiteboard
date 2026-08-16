@@ -1664,6 +1664,71 @@ the component tree, stale since ADR-042.
 
 ---
 
+## ADR-044: People dialog audit — silent failures, dialog semantics, leaving, ownership
+
+**Decision:** Sixteen findings from auditing the People dialog (ADR-042/043),
+fifteen fixed. The substantive ones:
+
+- **A failed member fetch now says so.** `refreshMembers` swallowed errors, with
+  `membersLoading` / `membersError` added alongside so the dialog can
+  distinguish loading, failed, and genuinely empty.
+- **Losing access is explained.** `removed-from-board` / `board-deleted` /
+  leaving all pass a notice through router state to the board list, which
+  renders it.
+- **`Dialog` behaves like a modal.** Focus moves in on open, Tab is trapped,
+  focus returns to whatever opened it, body scroll locks, Escape closes.
+  `useDialogDismiss` became `useDialog`, which owns all of it.
+- **Members can leave; owners can transfer.** `DELETE /members/:userId` now
+  permits removing *yourself*; `PATCH /members/:userId` sets a role, and
+  `owner` transfers the board in one transaction.
+
+Smaller: per-row error placement, a member count on the People button,
+`useId()` for the invite field and status ids, `role="img"` + `aria-label` on
+the online dot, an explanatory line for non-owners, and dropping
+`aria-describedby` in favour of the live region alone.
+
+**Context:** Two of these were defects I introduced. `refreshMembers`'
+error-swallowing was correct when the list only fed role badges — the comment
+said as much — and ADR-042 moved that same list behind a dialog whose entire
+purpose is answering "who has access", without revisiting it. A failed request
+then rendered as "nobody, not even an owner", which is never true. And ADR-042
+extracted the dialog shell from `ConfirmDialog` including its `aria-modal="true"`
+with none of the behaviour that claim implies, promoting a single oversight into
+shared infrastructure.
+
+The remaining two were long-standing: `leaveReason` had always known *why* a
+user was being bounced to `/boards` and nothing ever used it, and there was no
+way to leave a board at all — membership was something only an owner could end.
+
+**Alternatives considered:**
+- **A focus-trap library** — this is ~40 lines against a well-defined
+  contract, and the project's whole posture (ADR-001/004) is minimal
+  dependencies where the hand-written version is legible.
+- **Demoting an owner directly** rather than transfer-only — rejected: it can
+  leave a board with no owner, and every operation that manages membership
+  requires one.
+- **A separate "leave board" button outside the dialog** — the dialog already
+  lists you with your role, so the action belongs on your own row, where
+  Remove sits for everyone else.
+- **Keeping `removeError` under the list** — cheaper, but with a scrolling
+  list the message can sit off-screen from the row that caused it.
+
+**Trade-offs:** `DELETE /members/:userId` now means two things depending on
+whether the target is you, which is slightly overloaded for one route — the
+alternative was a `/leave` endpoint duplicating the same eviction path. The
+owner still can't delete their account's last board membership without
+transferring, which is a real dead end if they're the only member; deleting the
+board is the way out, and that already works.
+
+**Not fixed — inviting people without an account.** It needs either email
+delivery, which the project has no infrastructure for and which would be the
+first external dependency, or reinstating the invite-link flow ADR-031
+deliberately removed, which brings a join route and a signed-out
+signup-then-join path. Both are feature decisions rather than fixes, so this
+is left open rather than half-built.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

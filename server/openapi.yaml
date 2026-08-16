@@ -479,10 +479,68 @@ paths:
         required: true
         schema:
           type: integer
+    patch:
+      tags: [Membership]
+      summary: Change a member's role (transfer ownership)
+      description: |
+        Owner only. Setting `owner` transfers the board: the target becomes
+        owner, the caller is demoted to editor, and `Board.owner_id` moves - all
+        in one transaction, since a board with two owners or none is worse than
+        a failed transfer. Setting `editor` on someone already an editor is a
+        no-op; the owner can't demote themselves, as that would leave the board
+        with nobody able to manage it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [owner, editor]
+      responses:
+        "200":
+          description: The member's role after the change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                  role:
+                    type: string
+                    enum: [owner, editor]
+        "400":
+          description: Unknown role, or trying to change your own
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Current user is a member but not the owner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Board or member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     delete:
       tags: [Membership]
-      summary: Remove a member from the board
-      description: Owner only. The owner themself can't be removed this way.
+      summary: Remove a member, or leave the board
+      description: |
+        Removing someone else is owner-only. Removing *yourself* is leaving,
+        and any member can do it. The owner can't leave their own board -
+        they have to transfer ownership first (PATCH above), or the board
+        would be left with nobody able to manage it.
       responses:
         "204":
           description: Removed. Also evicts that user's currently-connected socket from the board's room.

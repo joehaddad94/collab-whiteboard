@@ -182,16 +182,72 @@ export function inviteMember(
   };
 }
 
+// Promoting someone to owner is a transfer, not an addition: a board has
+// exactly one owner, so the current one steps down in the same breath.
+// Demoting the owner directly isn't offered - it would leave the board with
+// nobody who can manage it.
+export function changeMemberRole(
+  boardId: number,
+  userId: number,
+  targetUserId: number,
+  rawRole: unknown,
+) {
+  requireOwner(boardId, userId);
+
+  if (rawRole !== "owner" && rawRole !== "editor") {
+    throw new ValidationError('role must be "owner" or "editor"');
+  }
+
+  const targetMembership = boardsRepository.findMembership(
+    boardId,
+    targetUserId,
+  );
+  if (!targetMembership) {
+    throw new NotFoundError("Member not found");
+  }
+
+  if (targetUserId === userId) {
+    throw new ValidationError(
+      rawRole === "owner"
+        ? "You already own this board"
+        : "Transfer ownership to someone else instead of demoting yourself",
+    );
+  }
+
+  if (rawRole === "editor") {
+    // The only other member who could be an owner is the caller, handled
+    // above - so this is either a no-op or already true.
+    return { userId: targetUserId, role: targetMembership.role };
+  }
+
+  boardsRepository.inTransaction(() => {
+    boardsRepository.updateMembershipRole(boardId, targetUserId, "owner");
+    boardsRepository.updateMembershipRole(boardId, userId, "editor");
+    boardsRepository.updateBoardOwner(boardId, targetUserId);
+  });
+
+  return { userId: targetUserId, role: "owner" as Role };
+}
+
 export function removeMember(
   boardId: number,
   userId: number,
   targetUserId: number,
 ) {
-  requireOwner(boardId, userId);
+  // Anyone can remove themselves - that's leaving the board. Removing someone
+  // else is the owner's call.
+  const membership = requireMembership(boardId, userId);
+  if (targetUserId !== userId && membership.role !== "owner") {
+    throw new ForbiddenError("Only the board owner can remove other people");
+  }
 
   const board = boardsRepository.findBoardSummaryById(boardId);
   if (board && targetUserId === board.owner_id) {
-    throw new ValidationError("Cannot remove the board owner");
+    throw new ValidationError(
+      targetUserId === userId
+        ? "Transfer ownership before leaving your own board"
+        : "Cannot remove the board owner",
+    );
   }
 
   const targetMembership = boardsRepository.findMembership(

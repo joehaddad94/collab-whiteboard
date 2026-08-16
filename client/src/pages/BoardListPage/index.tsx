@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Header } from "../../components/Header";
 import { BoardThumbnail } from "../../components/BoardThumbnail";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
@@ -29,6 +29,11 @@ export function BoardListPage() {
     confirmDelete,
   } = useBoardListPage();
 
+  // Set by BoardPage when you're removed from a board, when one is deleted
+  // out from under you, or when you leave - all of which used to drop you
+  // here with no explanation.
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
+
   return (
     <div className="page">
       <Header />
@@ -50,6 +55,8 @@ export function BoardListPage() {
             {creating ? "Creating…" : "Create board"}
           </button>
         </form>
+
+        {notice && <p className="page-notice">{notice}</p>}
 
         {error && <p className="form-error">{error}</p>}
 

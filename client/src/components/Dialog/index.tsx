@@ -1,6 +1,6 @@
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { CloseIcon } from "../icons";
-import { useDialogDismiss } from "./useDialogDismiss";
+import { useDialog } from "./useDialog";
 
 interface DialogProps {
   title: string;
@@ -26,7 +26,8 @@ export function Dialog({
   showCloseButton = false,
   className,
 }: DialogProps) {
-  useDialogDismiss({ onDismiss: onClose });
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useDialog({ onClose, dialogRef });
   // Generated, not hardcoded: two dialogs open at once would otherwise both
   // claim the same id and aria-labelledby would resolve to the wrong one.
   const titleId = useId();
@@ -34,6 +35,10 @@ export function Dialog({
   return (
     <div className="dialog-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
+        // Focusable so the dialog itself can hold focus when it has no
+        // focusable children yet.
+        tabIndex={-1}
         className={`dialog ${className ?? ""}`}
         role="dialog"
         aria-modal="true"

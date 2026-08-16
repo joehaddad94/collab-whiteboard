@@ -91,6 +91,13 @@ with no accept step, and the list refreshes so they appear in it. Removing
 takes a second click to confirm in the row, and takes effect immediately — if
 that person is on the board right now, they're dropped from it.
 
+Owners can also hand the board over with **Make owner**: that person becomes
+the owner and you become an editor. Everyone else gets **Leave** on their own
+row. The owner can't leave their own board without transferring it first,
+since a board needs someone who can manage it. Being removed, leaving, or
+having a board deleted under you all return you to the board list with a note
+saying which happened, rather than dropping you there unexplained.
+
 Note this is *membership*, which is a different question from *presence*: the
 avatar chips in the header show who is connected this second and update live
 over the socket, while this dialog shows who is allowed in.

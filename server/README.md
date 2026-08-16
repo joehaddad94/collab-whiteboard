@@ -65,7 +65,8 @@ Everything below is a summary — that's the authoritative reference.
 | GET | `/api/boards/:id/members` | member | List members with roles |
 | POST | `/api/boards/:id/members` | owner | Invite by username (case-insensitive), immediate `editor` membership |
 | GET | `/api/boards/:id/members/lookup?username=` | owner | Whether that username exists, is already a member, or is you — so the invite UI can say so before you submit |
-| DELETE | `/api/boards/:id/members/:userId` | owner | Can't remove the owner |
+| PATCH | `/api/boards/:id/members/:userId` | owner | Change role. `owner` transfers the board (caller becomes editor) in one transaction |
+| DELETE | `/api/boards/:id/members/:userId` | member | Remove someone (owner only) **or** yourself (anyone) — leaving. The owner must transfer before leaving |
 
 Conventions worth knowing before you poke at this with curl/Postman:
 - **404, not 403, for "you can't see this"** — a board that exists but you're

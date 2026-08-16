@@ -19,6 +19,8 @@ export function useBoardPage() {
   const [board, setBoard] = useState<BoardDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [members, setMembers] = useState<BoardMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState(DEFAULT_COLOR);
@@ -71,12 +73,23 @@ export function useBoardPage() {
   // Membership changes come from REST, not sockets, so there's nothing to push
   // an update - the People dialog calls this after inviting or removing. It
   // also refreshes the header's role badges, which read the same list.
+  // This list used to only feed role badges, where failing quietly was fine.
+  // It now backs the People dialog too, where an empty list is a claim that
+  // nobody has access - so a failure has to be reported as one.
   const refreshMembers = useCallback(async () => {
     if (!Number.isInteger(boardId)) return;
+    setMembersLoading(true);
     try {
       setMembers(await api.boards.listMembers(boardId));
-    } catch {
-      // Non-critical: role badges just won't show if this fails.
+      setMembersError(null);
+    } catch (err) {
+      setMembersError(
+        err instanceof ApiRequestError
+          ? err.message
+          : "Couldn't load who has access to this board",
+      );
+    } finally {
+      setMembersLoading(false);
     }
   }, [boardId]);
 
@@ -85,8 +98,25 @@ export function useBoardPage() {
   }, [refreshMembers]);
 
   useEffect(() => {
-    if (leaveReason) navigate("/boards");
+    if (!leaveReason) return;
+    navigate("/boards", {
+      replace: true,
+      state: {
+        notice:
+          leaveReason === "removed"
+            ? "You were removed from that board."
+            : "That board was deleted by its owner.",
+      },
+    });
   }, [leaveReason, navigate]);
+
+  // Leaving under your own steam isn't an eviction, so it gets its own wording.
+  const handleLeftBoard = useCallback(() => {
+    navigate("/boards", {
+      replace: true,
+      state: { notice: "You left that board." },
+    });
+  }, [navigate]);
 
   useEffect(() => {
     hasHydratedRef.current = false;
@@ -156,8 +186,11 @@ export function useBoardPage() {
     hasConnected,
     connectedUsers,
     members,
+    membersLoading,
+    membersError,
     onlineMembers,
     refreshMembers,
+    handleLeftBoard,
     messages,
     sendMessage,
     socketError,

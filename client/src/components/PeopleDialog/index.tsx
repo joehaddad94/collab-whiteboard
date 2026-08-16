@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Dialog } from "../Dialog";
 import { Avatar } from "../Avatar";
 import type { BoardMember, ConnectedUser } from "../../types";
@@ -32,22 +33,28 @@ function statusTone(kind: InviteeStatus["kind"]): string {
 interface PeopleDialogProps {
   boardId: number;
   members: BoardMember[];
+  membersLoading: boolean;
+  membersError: string | null;
   connectedUsers: ConnectedUser[];
   currentUserId: number | null;
-  /** Owners get the invite field and the remove actions; everyone else can
-      still see who has access. */
+  /** Owners get the invite field and the per-row actions; everyone else can
+      still see who has access, and can leave. */
   canManage: boolean;
   onMembersChanged: () => Promise<void> | void;
+  onLeft: () => void;
   onClose: () => void;
 }
 
 export function PeopleDialog({
   boardId,
   members,
+  membersLoading,
+  membersError,
   connectedUsers,
   currentUserId,
   canManage,
   onMembersChanged,
+  onLeft,
   onClose,
 }: PeopleDialogProps) {
   const {
@@ -61,77 +68,139 @@ export function PeopleDialog({
     inviteError,
     handleInvite,
     pendingRemovalId,
-    removingId,
-    removeError,
+    busyId,
+    rowError,
     requestRemove,
     cancelRemove,
     confirmRemove,
+    leaveBoard,
+    makeOwner,
   } = usePeopleDialog({ boardId, members, connectedUsers, onMembersChanged });
+
+  // Generated rather than hardcoded, for the same reason the dialog title is.
+  const usernameId = useId();
+  const statusId = useId();
+
+  async function handleLeave(userId: number) {
+    if (await leaveBoard(userId)) onLeft();
+  }
 
   return (
     <Dialog title="People" onClose={onClose} showCloseButton className="people-dialog">
-      <ul className="people-list">
-        {people.map((person) => (
-          <li key={person.userId} className="people-row">
-            <span className="people-row-avatar">
-              <Avatar name={person.username} userId={person.userId} size={28} />
-              {person.isOnline && (
-                <span className="people-online-dot" title="On the board now" />
-              )}
-            </span>
+      {/* An empty list and a failed fetch look identical, so they have to say
+          which they are - otherwise a broken request reads as "nobody has
+          access to this board", which is never true. */}
+      {membersLoading && <p className="people-state">Loading people…</p>}
 
-            <span className="people-row-name">
-              {person.userId === currentUserId ? "You" : person.username}
-            </span>
-            <span className="role-badge">{person.role}</span>
+      {!membersLoading && membersError && (
+        <p className="people-state is-error">{membersError}</p>
+      )}
 
-            {/* The owner can't be removed - the server rejects it - so the
-                action isn't offered rather than offered and then refused. */}
-            {canManage && person.role !== "owner" && (
-              <span className="people-row-actions">
-                {pendingRemovalId === person.userId ? (
-                  <>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-danger btn-sm"
-                      onClick={() => void confirmRemove(person.userId)}
-                      disabled={removingId === person.userId}
-                    >
-                      {removingId === person.userId ? "Removing…" : "Confirm"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={cancelRemove}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-danger btn-sm"
-                    onClick={() => requestRemove(person.userId)}
-                  >
-                    Remove
-                  </button>
+      {!membersLoading && !membersError && (
+        <ul className="people-list">
+          {people.map((person) => {
+            const isSelf = person.userId === currentUserId;
+            const isBusy = busyId === person.userId;
+
+            return (
+              <li key={person.userId} className="people-row">
+                <span className="people-row-avatar">
+                  <Avatar name={person.username} userId={person.userId} size={28} />
+                  {person.isOnline && (
+                    <span
+                      className="people-online-dot"
+                      role="img"
+                      aria-label="On the board now"
+                      title="On the board now"
+                    />
+                  )}
+                </span>
+
+                <span className="people-row-name">
+                  {isSelf ? "You" : person.username}
+                </span>
+                <span className="role-badge">{person.role}</span>
+
+                <span className="people-row-actions">
+                  {pendingRemovalId === person.userId ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-danger btn-sm"
+                        onClick={() =>
+                          void (isSelf
+                            ? handleLeave(person.userId)
+                            : confirmRemove(person.userId))
+                        }
+                        disabled={isBusy}
+                      >
+                        {isBusy ? "Working…" : "Confirm"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={cancelRemove}
+                        disabled={isBusy}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Handing the board over is the only way an owner can
+                          leave, so it's offered where leaving would be. */}
+                      {canManage && !isSelf && person.role !== "owner" && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => void makeOwner(person.userId)}
+                          disabled={isBusy}
+                          title="Make this person the owner — you become an editor"
+                        >
+                          Make owner
+                        </button>
+                      )}
+                      {/* Anyone can leave; only the owner can remove someone
+                          else. The owner has to transfer before leaving. */}
+                      {isSelf && person.role !== "owner" && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-danger btn-sm"
+                          onClick={() => requestRemove(person.userId)}
+                        >
+                          Leave
+                        </button>
+                      )}
+                      {canManage && !isSelf && person.role !== "owner" && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-danger btn-sm"
+                          onClick={() => requestRemove(person.userId)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </>
+                  )}
+                </span>
+
+                {rowError?.userId === person.userId && (
+                  <span className="people-row-error">{rowError.message}</span>
                 )}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-      {removeError && <p className="people-feedback is-error">{removeError}</p>}
-
-      {canManage && (
+      {canManage ? (
         <form className="people-invite-form" onSubmit={handleInvite}>
-          <label htmlFor="invite-username" className="people-invite-label">
+          <label htmlFor={usernameId} className="people-invite-label">
             Invite by username
           </label>
           <div className="people-invite-row">
             <input
-              id="invite-username"
+              id={usernameId}
               type="text"
               placeholder="username"
               value={username}
@@ -139,7 +208,6 @@ export function PeopleDialog({
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
-              aria-describedby="invite-status"
               required
             />
             <button type="submit" className="btn btn-primary" disabled={!canInvite}>
@@ -147,10 +215,11 @@ export function PeopleDialog({
             </button>
           </div>
 
-          {/* aria-live so the result of the check is announced, not just
-              shown - it appears without the user doing anything to ask. */}
+          {/* A live region rather than aria-describedby: the text appears in
+              response to typing, not to the field being focused, and pairing
+              both tends to get it announced twice. */}
           <p
-            id="invite-status"
+            id={statusId}
             className={`people-feedback ${statusTone(inviteeStatus.kind)}`}
             aria-live="polite"
           >
@@ -162,6 +231,10 @@ export function PeopleDialog({
           )}
           {inviteError && <p className="people-feedback is-error">{inviteError}</p>}
         </form>
+      ) : (
+        <p className="people-note">
+          Only the board owner can invite or remove people.
+        </p>
       )}
     </Dialog>
   );

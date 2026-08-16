@@ -99,6 +99,11 @@ export const api = {
       request<InviteeLookup>(
         `/api/boards/${id}/members/lookup?username=${encodeURIComponent(username)}`,
       ),
+    changeMemberRole: (id: number, userId: number, role: BoardMember["role"]) =>
+      request<{ userId: number; role: BoardMember["role"] }>(
+        `/api/boards/${id}/members/${userId}`,
+        { method: "PATCH", body: JSON.stringify({ role }) },
+      ),
     removeMember: (id: number, userId: number) =>
       request<void>(`/api/boards/${id}/members/${userId}`, {
         method: "DELETE",

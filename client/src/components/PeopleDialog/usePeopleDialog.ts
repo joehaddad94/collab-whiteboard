@@ -39,8 +39,13 @@ export function usePeopleDialog({
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [pendingRemovalId, setPendingRemovalId] = useState<number | null>(null);
-  const [removingId, setRemovingId] = useState<number | null>(null);
-  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  // Keyed by user so the message lands in the row it belongs to, rather than
+  // under a list that may have scrolled away from it.
+  const [rowError, setRowError] = useState<{
+    userId: number;
+    message: string;
+  } | null>(null);
 
   // Online status is derived from the same live socket state the header chips
   // use, so the list stays current while the dialog is open without this hook
@@ -62,6 +67,10 @@ export function usePeopleDialog({
   // and every run cancels the previous one's result - responses can land out
   // of order, and a stale one would otherwise overwrite a newer answer.
   useEffect(() => {
+    // Whatever the last invite said is about the previous name, not this one.
+    setInviteMessage(null);
+    setInviteError(null);
+
     const trimmed = username.trim();
     if (!trimmed) {
       setInviteeStatus({ kind: "idle" });
@@ -92,7 +101,7 @@ export function usePeopleDialog({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [username, boardId, members]);
+  }, [username, boardId]);
 
   async function handleInvite(e: FormEvent) {
     e.preventDefault();
@@ -119,7 +128,7 @@ export function usePeopleDialog({
   }
 
   function requestRemove(userId: number) {
-    setRemoveError(null);
+    setRowError(null);
     setPendingRemovalId(userId);
   }
 
@@ -127,21 +136,52 @@ export function usePeopleDialog({
     setPendingRemovalId(null);
   }
 
-  async function confirmRemove(userId: number) {
-    setRemovingId(userId);
-    setRemoveError(null);
+  async function runRowAction(
+    userId: number,
+    action: () => Promise<unknown>,
+    fallbackMessage: string,
+  ) {
+    setBusyId(userId);
+    setRowError(null);
     try {
-      await api.boards.removeMember(boardId, userId);
+      await action();
       await onMembersChanged();
       setPendingRemovalId(null);
+      return true;
     } catch (err) {
-      setRemoveError(
-        err instanceof ApiRequestError ? err.message : "Failed to remove",
-      );
+      setRowError({
+        userId,
+        message:
+          err instanceof ApiRequestError ? err.message : fallbackMessage,
+      });
+      return false;
     } finally {
-      setRemovingId(null);
+      setBusyId(null);
     }
   }
+
+  const confirmRemove = (userId: number) =>
+    runRowAction(
+      userId,
+      () => api.boards.removeMember(boardId, userId),
+      "Failed to remove",
+    );
+
+  // Leaving is removing yourself - the same endpoint, which the server now
+  // allows for your own membership.
+  const leaveBoard = (userId: number) =>
+    runRowAction(
+      userId,
+      () => api.boards.removeMember(boardId, userId),
+      "Failed to leave",
+    );
+
+  const makeOwner = (userId: number) =>
+    runRowAction(
+      userId,
+      () => api.boards.changeMemberRole(boardId, userId, "owner"),
+      "Failed to transfer ownership",
+    );
 
   return {
     people,
@@ -162,10 +202,12 @@ export function usePeopleDialog({
     inviteError,
     handleInvite,
     pendingRemovalId,
-    removingId,
-    removeError,
+    busyId,
+    rowError,
     requestRemove,
     cancelRemove,
     confirmRemove,
+    leaveBoard,
+    makeOwner,
   };
 }
