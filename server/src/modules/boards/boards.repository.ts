@@ -126,36 +126,6 @@ export function findMembersForBoard(boardId: number): MemberRow[] {
     .all(boardId) as unknown as MemberRow[];
 }
 
-export function updateMembershipRole(
-  boardId: number,
-  userId: number,
-  role: Role,
-): void {
-  db.prepare(
-    "UPDATE BoardMember SET role = ? WHERE board_id = ? AND user_id = ?",
-  ).run(role, boardId, userId);
-}
-
-export function updateBoardOwner(boardId: number, userId: number): void {
-  db.prepare(
-    "UPDATE Board SET owner_id = ?, updated_at = datetime('now') WHERE id = ?",
-  ).run(userId, boardId);
-}
-
-// Transferring ownership is three writes that must not half-happen - a board
-// with two owners, or none, is worse than a failed transfer.
-export function inTransaction<T>(work: () => T): T {
-  db.exec("BEGIN");
-  try {
-    const result = work();
-    db.exec("COMMIT");
-    return result;
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
-}
-
 export function deleteMembership(boardId: number, userId: number): void {
   db.prepare(
     "DELETE FROM BoardMember WHERE board_id = ? AND user_id = ?",

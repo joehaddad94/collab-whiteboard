@@ -176,13 +176,6 @@ export function usePeopleDialog({
       "Failed to leave",
     );
 
-  const makeOwner = (userId: number) =>
-    runRowAction(
-      userId,
-      () => api.boards.changeMemberRole(boardId, userId, "owner"),
-      "Failed to transfer ownership",
-    );
-
   return {
     people,
     username,
@@ -208,6 +201,5 @@ export function usePeopleDialog({
     cancelRemove,
     confirmRemove,
     leaveBoard,
-    makeOwner,
   };
 }

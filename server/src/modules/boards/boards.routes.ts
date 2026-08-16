@@ -18,7 +18,6 @@ router.get("/:id/members", boardsController.listMembers);
 // Before the /:userId route below so "lookup" isn't captured as a user id.
 router.get("/:id/members/lookup", boardsController.lookupInvitee);
 router.post("/:id/members", boardsController.inviteMember);
-router.patch("/:id/members/:userId", boardsController.changeMemberRole);
 router.delete("/:id/members/:userId", boardsController.removeMember);
 
 export default router;

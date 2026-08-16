@@ -74,7 +74,6 @@ export function PeopleDialog({
     cancelRemove,
     confirmRemove,
     leaveBoard,
-    makeOwner,
   } = usePeopleDialog({ boardId, members, connectedUsers, onMembersChanged });
 
   // Generated rather than hardcoded, for the same reason the dialog title is.
@@ -147,21 +146,9 @@ export function PeopleDialog({
                     </>
                   ) : (
                     <>
-                      {/* Handing the board over is the only way an owner can
-                          leave, so it's offered where leaving would be. */}
-                      {canManage && !isSelf && person.role !== "owner" && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => void makeOwner(person.userId)}
-                          disabled={isBusy}
-                          title="Make this person the owner — you become an editor"
-                        >
-                          Make owner
-                        </button>
-                      )}
                       {/* Anyone can leave; only the owner can remove someone
-                          else. The owner has to transfer before leaving. */}
+                          else. The owner can't leave their own board - they
+                          delete it instead. */}
                       {isSelf && person.role !== "owner" && (
                         <button
                           type="button"

@@ -1729,6 +1729,40 @@ is left open rather than half-built.
 
 ---
 
+## ADR-045: Drop role editing and ownership transfer
+
+**Decision:** `PATCH /api/boards/:id/members/:userId` is removed, along with
+`changeMemberRole`, the `updateMembershipRole` / `updateBoardOwner` /
+`inTransaction` repository helpers, the client's `changeMemberRole` and
+`makeOwner`, and the "Make owner" button. Leaving a board (ADR-044) stays.
+
+**Context:** ADR-044 added transfer as the answer to "how does an owner leave
+their own board", which was a question the audit raised rather than one the
+challenge asks. Nothing in the requirements mentions roles at all - membership
+and permissions are already beyond the brief, and letting people reassign them
+is beyond that again. It was scope that arrived by following a chain of
+reasoning rather than by being needed.
+
+Removing it leaves the owner unable to leave their own board. That's fine, and
+now says so plainly: the error moved from "Transfer ownership before leaving
+your own board", which pointed at a feature that no longer exists, to "You own
+this board - delete it instead of leaving". Deleting is a real, already-working
+way out.
+
+**Alternatives considered:**
+- **Keep it, since it's built and tested** — rejected: unused surface is not
+  free. It's another endpoint to document, defend in review, and keep correct,
+  and every reader has to work out why a whiteboard needs ownership transfer.
+- **Keep the endpoint, drop the UI** — worse: an undocumented capability
+  reachable by anyone with curl, with no reason to exist.
+
+**Trade-offs:** A board's ownership is now fixed for its lifetime. If an owner
+wants out and others are using the board, there's no clean hand-off - they
+delete it, or leave it in place. Acceptable for boards that are cheap to
+create; it would not be for anything long-lived or shared at scale.
+
+---
+
 ## How to use this file
 
 Whenever a new non-trivial technical decision is made (library choice, architecture

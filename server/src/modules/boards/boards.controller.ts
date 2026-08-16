@@ -83,18 +83,6 @@ export function lookupInvitee(req: AuthenticatedRequest, res: Response) {
   res.json(boardsService.lookupInvitee(boardId, req.user!.userId, username));
 }
 
-export function changeMemberRole(req: AuthenticatedRequest, res: Response) {
-  const boardId = parseId(req.params.id);
-  const targetUserId = parseId(req.params.userId, "Member not found");
-  const result = boardsService.changeMemberRole(
-    boardId,
-    req.user!.userId,
-    targetUserId,
-    req.body?.role,
-  );
-  res.json(result);
-}
-
 export function removeMember(req: AuthenticatedRequest, res: Response) {
   const boardId = parseId(req.params.id);
   const targetUserId = parseId(req.params.userId, "Member not found");

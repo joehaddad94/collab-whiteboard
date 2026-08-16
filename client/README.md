@@ -91,10 +91,9 @@ with no accept step, and the list refreshes so they appear in it. Removing
 takes a second click to confirm in the row, and takes effect immediately — if
 that person is on the board right now, they're dropped from it.
 
-Owners can also hand the board over with **Make owner**: that person becomes
-the owner and you become an editor. Everyone else gets **Leave** on their own
-row. The owner can't leave their own board without transferring it first,
-since a board needs someone who can manage it. Being removed, leaving, or
+Everyone other than the owner gets **Leave** on their own row. The owner
+can't leave their own board — it would be left with nobody able to manage it,
+so they delete it instead. Being removed, leaving, or
 having a board deleted under you all return you to the board list with a note
 saying which happened, rather than dropping you there unexplained.
 
