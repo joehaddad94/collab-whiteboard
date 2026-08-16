@@ -900,7 +900,7 @@ a {
    orphaned the old selector. Sits clear of the input above it, and reserves
    its line so the form doesn't jump as the check resolves. */
 .people-invite-status {
-  margin-top: 14px;
+  margin-top: 22px;
   min-height: 1.25em;
 }
 
