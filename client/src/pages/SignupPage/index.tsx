@@ -23,7 +23,11 @@ export function SignupPage() {
           Collab Whiteboard
         </Link>
         <h1>Sign up</h1>
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
         <label>
           Email
           <input

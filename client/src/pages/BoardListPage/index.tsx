@@ -58,7 +58,11 @@ export function BoardListPage() {
 
         {notice && <p className="page-notice">{notice}</p>}
 
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
 
         {loading ? (
           <p>Loading boards…</p>

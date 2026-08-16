@@ -92,7 +92,7 @@ export function PeopleDialog({
       {membersLoading && <p className="people-state">Loading people…</p>}
 
       {!membersLoading && membersError && (
-        <p className="people-state is-error">{membersError}</p>
+        <p className="people-state is-error" role="alert">{membersError}</p>
       )}
 
       {!membersLoading && !membersError && (
@@ -172,7 +172,7 @@ export function PeopleDialog({
                 </span>
 
                 {rowError?.userId === person.userId && (
-                  <span className="people-row-error">{rowError.message}</span>
+                  <span className="people-row-error" role="alert">{rowError.message}</span>
                 )}
               </li>
             );
@@ -216,7 +216,7 @@ export function PeopleDialog({
           {inviteMessage && (
             <p className="people-feedback is-success">{inviteMessage}</p>
           )}
-          {inviteError && <p className="people-feedback is-error">{inviteError}</p>}
+          {inviteError && <p className="people-feedback is-error" role="alert">{inviteError}</p>}
         </form>
       ) : (
         <p className="people-note">

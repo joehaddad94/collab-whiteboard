@@ -21,7 +21,11 @@ export function LoginPage() {
           Collab Whiteboard
         </Link>
         <h1>Log in</h1>
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
         <label>
           Username or email
           <input

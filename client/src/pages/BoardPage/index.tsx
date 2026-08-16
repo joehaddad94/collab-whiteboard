@@ -124,9 +124,16 @@ export function BoardPage() {
         />
       )}
 
-      {loadError && <p className="form-error board-page-banner">{loadError}</p>}
-      {socketError && (
-        <p className="form-error board-page-banner">
+      {loadError && (
+        <p className="form-error board-page-banner" role="alert">
+          {loadError}
+        </p>
+      )}
+      {/* A board that failed to load also fails to join, so both errors fire
+          for one problem - two stacked banners saying the same thing, pushing
+          the canvas down. The load failure is the one that explains it. */}
+      {!loadError && socketError && (
+        <p className="form-error board-page-banner" role="alert">
           {socketError}{" "}
           <button type="button" className="btn btn-ghost" onClick={clearSocketError}>
             Dismiss

@@ -46,6 +46,25 @@ export function useBoardSocket(boardId: number) {
 
     socket.on("disconnect", () => setConnected(false));
 
+    // Socket.io only notices a dead connection when its heartbeat times out,
+    // which is pingInterval + pingTimeout after the fact - measured at 45s with
+    // the defaults. The browser knows the moment the network drops, so trust it
+    // instead of waiting: 45 seconds of accepting strokes that will be
+    // discarded is precisely what the paused state exists to prevent.
+    function handleOffline() {
+      setConnected(false);
+      // Close it rather than just flagging it: socket.io still believes this
+      // connection is fine until its heartbeat times out, so anything that
+      // asks `socket.connected` gets a stale yes - including the reconnect
+      // below, which would then decline to do anything.
+      socket.disconnect();
+    }
+    function handleOnline() {
+      socket.connect();
+    }
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+
     // Server uses one generic error event for every rejected action
     // (bad join, malformed payload, etc.) rather than a bespoke event
     // per action type (ADR-017).
@@ -92,6 +111,8 @@ export function useBoardSocket(boardId: number) {
     socket.on("board-deleted", () => setLeaveReason("board-deleted"));
 
     return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
       socket.emit("leave-board", { boardId });
       socket.disconnect();
       setSocket(null);
