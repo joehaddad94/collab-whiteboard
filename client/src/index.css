@@ -795,6 +795,31 @@ a {
   touch-action: none;
 }
 
+.whiteboard-container.is-disabled canvas {
+  pointer-events: none;
+}
+
+/* Sits above the canvas and the cursor layer - if drawing is paused, that
+   needs to be the most visible thing on the board. */
+.canvas-paused {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface-raised);
+  box-shadow: var(--shadow-md);
+  color: var(--ink-700);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
 /* Positioned from JS - it tracks the fixed-aspect board scaled to fit the
    container, which is the same rect the canvas clips its drawing to. */
 .whiteboard-page {

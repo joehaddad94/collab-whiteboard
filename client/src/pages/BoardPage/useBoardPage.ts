@@ -37,6 +37,7 @@ export function useBoardPage() {
   const {
     socket,
     connected,
+    hasConnected,
     connectedUsers,
     messages,
     sendMessage,
@@ -184,6 +185,7 @@ export function useBoardPage() {
     loadError,
     socket,
     connected,
+    hasConnected,
     connectedUsers,
     onlineMembers,
     messages,

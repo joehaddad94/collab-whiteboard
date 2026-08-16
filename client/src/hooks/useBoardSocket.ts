@@ -18,6 +18,9 @@ export type BoardLeaveReason = "removed" | "board-deleted" | null;
 export function useBoardSocket(boardId: number) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  // Distinguishes a first connect from a reconnect, so the UI can say
+  // "Connecting" on load and "Reconnecting" after a drop.
+  const [hasConnected, setHasConnected] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -37,6 +40,7 @@ export function useBoardSocket(boardId: number) {
 
     socket.on("connect", () => {
       setConnected(true);
+      setHasConnected(true);
       socket.emit("join-board", { boardId });
     });
 
@@ -109,6 +113,7 @@ export function useBoardSocket(boardId: number) {
   return {
     socket,
     connected,
+    hasConnected,
     connectedUsers,
     messages,
     sendMessage,

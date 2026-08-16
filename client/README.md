@@ -67,6 +67,11 @@ you see is relayed by the server without touching the database per stroke,
 and persistence is what makes a board survive a restart or reload correctly
 after it goes idle.
 
+If the connection drops, drawing is **paused** rather than accepted and
+thrown away — the canvas stops taking input and says so, because anything
+drawn while disconnected never reaches the server and would be replaced by
+the full board state on reconnect.
+
 ### Presence & cursors
 Everyone currently viewing the board shows up as an avatar chip in the
 header (you're labeled "You"), live, as people join and leave. Move your

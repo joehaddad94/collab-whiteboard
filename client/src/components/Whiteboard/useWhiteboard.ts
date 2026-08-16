@@ -16,6 +16,7 @@ interface UseWhiteboardOptions {
   color: string;
   brushSize: number;
   socket: Socket | null;
+  disabled?: boolean;
   onStrokesChange?: (strokes: Stroke[]) => void;
 }
 
@@ -56,6 +57,7 @@ export function useWhiteboard({
   color,
   brushSize,
   socket,
+  disabled = false,
   onStrokesChange,
 }: UseWhiteboardOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -264,7 +266,19 @@ export function useWhiteboard({
     );
   }
 
+  // Losing the connection mid-stroke abandons it: the server never got a
+  // stroke-end and won't have it, so finishing it locally would only draw
+  // something that's about to be wiped by the next board-joined.
+  useEffect(() => {
+    if (!disabled || !currentStrokeRef.current) return;
+    currentStrokeRef.current = null;
+    redrawAll();
+    // redrawAll reads live refs rather than closed-over state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled]);
+
   function handlePointerDown(e: PointerEvent<HTMLCanvasElement>) {
+    if (disabled) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
@@ -291,6 +305,10 @@ export function useWhiteboard({
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
+    // Socket.io buffers emits made while disconnected and flushes them on
+    // reconnect, so staying quiet here also keeps a backlog of stale cursor
+    // positions from arriving all at once afterwards.
+    if (disabled) return;
     const point = getPoint(e);
 
     const now = Date.now();

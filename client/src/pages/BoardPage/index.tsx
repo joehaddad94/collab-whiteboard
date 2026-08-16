@@ -14,6 +14,7 @@ export function BoardPage() {
     loadError,
     socket,
     connected,
+    hasConnected,
     onlineMembers,
     messages,
     sendMessage,
@@ -132,6 +133,19 @@ export function BoardPage() {
 
       <div className="board-canvas-area">
         <div className="board-canvas-region">
+          {/* Drawing while disconnected would be discarded without warning:
+              the server never receives it, and the next board-joined replaces
+              local state wholesale. Say so and stop accepting input, rather
+              than letting the work disappear silently. */}
+          {!connected && (
+            <div className="canvas-paused" role="status">
+              <span className="dot dot-pending" />
+              {hasConnected
+                ? "Reconnecting — drawing paused"
+                : "Connecting — drawing paused"}
+            </div>
+          )}
+
           {userId !== null && (
             <>
               <Whiteboard
@@ -140,6 +154,7 @@ export function BoardPage() {
                 color={color}
                 brushSize={brushSize}
                 socket={socket}
+                disabled={!connected}
                 onStrokesChange={handleStrokesChange}
               />
               <Toolbar
