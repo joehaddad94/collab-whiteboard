@@ -240,10 +240,12 @@ a {
   border-color: var(--accent);
 }
 
-/* Sits beside a button in a flex row and should take the remaining space. */
+/* Sits beside a button in a flex row and should take the remaining space.
+   Deliberately not min-width: 0 - a flex item's content-based minimum is what
+   stops these fields collapsing, and overriding it here resizes every form
+   that uses it. */
 .input-grow {
   flex: 1;
-  min-width: 0;
 }
 
 /* Standalone fields on a page, rather than a control inside a dense panel. */
@@ -1174,6 +1176,11 @@ a {
 .people-invite-row {
   display: flex;
   gap: 8px;
+}
+/* Narrow dialog: this is the one field that does need to shrink past its
+   content minimum, and the only one that had min-width: 0 before. */
+.people-invite-row .input {
+  min-width: 0;
 }
 
 .people-feedback {
