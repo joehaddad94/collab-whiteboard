@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# env files - also covered by the repo root .gitignore, but kept here so the
+# protection survives this directory being moved or split out on its own
+.env
+.env.*
+!.env.example
