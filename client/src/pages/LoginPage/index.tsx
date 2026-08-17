@@ -29,6 +29,7 @@ export function LoginPage() {
         <label>
           Username or email
           <input
+            className="input input-lg"
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
@@ -39,6 +40,7 @@ export function LoginPage() {
         <label>
           Password
           <input
+            className="input input-lg"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

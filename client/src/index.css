@@ -1,3 +1,5 @@
+/* --------------------------------------------- design tokens --------------------------------------------- */
+
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
@@ -70,6 +72,8 @@
   }
 }
 
+/* ------------------------------------------------------ base ------------------------------------------------------ */
+
 * {
   box-sizing: border-box;
 }
@@ -116,11 +120,8 @@ a {
   outline-offset: 2px;
 }
 
-.mono {
-  font-family: var(--font-mono);
-}
+/* --------------------------------------- components: buttons --------------------------------------- */
 
-/* ---------- buttons ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -136,17 +137,21 @@ a {
   line-height: 1;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
+
 .btn:hover {
   border-color: var(--ink-400);
 }
+
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
 }
+
 .btn-primary:hover {
   filter: brightness(1.06);
 }
+
 /* Ghost still means "secondary", not "invisible" - it keeps a real outline so
    it reads as something you can press, and only the fill is held back. */
 .btn-ghost {
@@ -154,60 +159,101 @@ a {
   background: transparent;
   color: var(--ink-700);
 }
+
 .btn-ghost:hover {
   background: var(--bg-sunken);
   border-color: var(--ink-400);
   color: var(--ink-900);
 }
+
 .btn-active,
 .btn-ghost.btn-active {
   background: var(--accent-soft);
   border-color: var(--accent-soft-border);
   color: var(--accent);
 }
+
 .btn-active:hover,
 .btn-ghost.btn-active:hover {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
 }
+
 .btn-danger {
   color: var(--danger);
 }
+
 /* Ghost's hover colour is more specific than .btn-danger, so without this a
    destructive action would lose its red exactly when you point at it. */
 .btn-ghost.btn-danger,
 .btn-ghost.btn-danger:hover {
   color: var(--danger);
 }
+
 .btn-ghost.btn-danger:hover {
   background: var(--danger-soft);
   border-color: var(--danger);
 }
+
 .btn-danger-solid {
   background: var(--danger);
   border-color: var(--danger);
   color: #fff;
 }
+
 .btn-danger-solid:hover {
   filter: brightness(1.06);
 }
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 .btn-icon {
   padding: 8px;
 }
+
 .btn-sm {
   height: 28px;
   padding: 0 10px;
   font-size: 12.5px;
 }
 
+/* ---------------------------------------- components: inputs ---------------------------------------- */
+
 /* One role pill, used by both the presence chips and the board cards - the two
    were drifting apart (mono uppercase in an accent pill on one, sans on the
    other) for something that means exactly the same thing in both places. */
+.input {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--ink-900);
+  /* Inputs inside a <label> would otherwise inherit its 600. */
+  font-weight: 400;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+/* Sits beside a button in a flex row and should take the remaining space. */
+.input-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Standalone fields on a page, rather than a control inside a dense panel. */
+.input-lg {
+  padding: 10px 12px;
+  font-size: 15px;
+}
+
+/* ------------------------------- components: badges & avatar ------------------------------- */
+
 .role-badge {
   display: inline-flex;
   align-items: center;
@@ -225,11 +271,39 @@ a {
   flex-shrink: 0;
 }
 
-/* ---------- forms ---------- */
-.field-hint {
-  font-size: 12.5px;
-  color: var(--ink-400);
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
 }
+
+/* Count on the People button - a quiet pill rather than a second label. */
+.btn-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ink-200);
+  color: var(--ink-600);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.btn-active .btn-count {
+  background: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+/* -------------------------------------- components: feedback -------------------------------------- */
 
 .form-error {
   display: flex;
@@ -244,7 +318,68 @@ a {
   margin: 0 0 14px;
 }
 
-/* ---------- app header ---------- */
+.page-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-700);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  margin: 0 0 16px;
+}
+
+/* ---------------------------------------- components: dialog ---------------------------------------- */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  width: calc(100% - 40px);
+  box-shadow: var(--shadow-float);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.dialog h3 {
+  font-size: 16px;
+}
+
+.dialog p {
+  font-size: 13.5px;
+  color: var(--ink-600);
+  margin: 0 0 20px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ----------------------------------------- layout: app shell ----------------------------------------- */
+
 .app-header {
   height: 56px;
   display: flex;
@@ -254,6 +389,7 @@ a {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
 }
+
 .app-header-brand {
   display: inline-flex;
   align-items: center;
@@ -264,6 +400,7 @@ a {
   color: var(--ink-900);
   text-decoration: none;
 }
+
 .app-header-user {
   display: flex;
   align-items: center;
@@ -273,19 +410,32 @@ a {
   color: var(--ink-700);
 }
 
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-weight: 700;
-  flex-shrink: 0;
-  line-height: 1;
+.page {
+  min-height: 100%;
+  background: var(--bg-app);
 }
 
-/* ---------- auth pages ---------- */
-.auth-page {
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--ink-600);
+}
+
+.empty-state {
+  color: var(--ink-400);
+  padding: 40px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* ----------------------------------------------- pages: auth ----------------------------------------------- */
+
+/* The page-level treatment, shared with .error-boundary: the same situation
+   gets the same answer - one thing to read, centred, on the dotted ground. */
+.auth-page,
+.error-boundary {
   min-height: 100%;
   display: flex;
   align-items: center;
@@ -295,6 +445,7 @@ a {
   background-image: radial-gradient(var(--ink-200) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
 .auth-form {
   width: 100%;
   max-width: 380px;
@@ -304,14 +455,17 @@ a {
   padding: 32px;
   box-shadow: var(--shadow-md);
 }
+
 .auth-form .app-header-brand {
   display: block;
   margin-bottom: 22px;
 }
+
 .auth-form h1 {
   font-size: 22px;
   margin-bottom: 20px;
 }
+
 .auth-form label {
   display: flex;
   flex-direction: column;
@@ -321,62 +475,45 @@ a {
   font-weight: 600;
   color: var(--ink-700);
 }
-.auth-form input {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--ink-900);
-  font-weight: 400;
-  font-size: 15px;
-}
-.auth-form input:focus {
-  border-color: var(--accent);
-}
+
 .auth-form button[type="submit"] {
   width: 100%;
   justify-content: center;
   padding: 11px;
   margin-top: 4px;
 }
+
 .auth-switch {
   text-align: center;
   font-size: 13.5px;
   color: var(--ink-600);
   margin-top: 20px;
 }
+
 .auth-switch a {
   font-weight: 600;
   text-decoration: none;
 }
 
-/* ---------- board list ---------- */
-.page {
-  min-height: 100%;
-  background: var(--bg-app);
-}
+/* ----------------------------------------- pages: board list ----------------------------------------- */
+
 .board-list-page {
   max-width: 920px;
   margin: 0 auto;
   padding: 40px 24px 80px;
 }
+
 .board-list-page h1 {
   font-size: 25px;
   margin-bottom: 22px;
 }
+
 .new-board-form {
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
 }
-.new-board-form input {
-  flex: 1;
-  padding: 10px 13px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--ink-900);
-}
+
 .board-list {
   list-style: none;
   margin: 0;
@@ -385,6 +522,7 @@ a {
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 16px;
 }
+
 .board-list-item {
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -395,6 +533,7 @@ a {
   transition: box-shadow 0.18s ease, border-color 0.18s ease,
     transform 0.18s ease;
 }
+
 .board-list-item:has(.board-list-link:hover),
 .board-list-item:focus-within {
   box-shadow: var(--shadow-md);
@@ -411,6 +550,7 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
 /* Name on its own line so it gets the full card width to truncate into, with
    role and last-edited demoted to a quieter second line - rather than the name
    and the badge competing for one row and the name losing. */
@@ -421,6 +561,7 @@ a {
   margin: 13px 14px 14px;
   min-width: 0;
 }
+
 .board-name {
   font-weight: 700;
   font-size: 14.5px;
@@ -429,6 +570,7 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .board-meta {
   display: flex;
   align-items: center;
@@ -437,6 +579,7 @@ a {
   font-size: 11.5px;
   color: var(--ink-400);
 }
+
 .board-meta time {
   white-space: nowrap;
   overflow: hidden;
@@ -450,6 +593,7 @@ a {
   background-size: 14px 14px;
   position: relative;
 }
+
 .board-thumb svg {
   position: absolute;
   inset: 0;
@@ -470,11 +614,13 @@ a {
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
+
 .board-list-item:hover .board-list-actions,
 .board-list-item:focus-within .board-list-actions {
   opacity: 1;
   pointer-events: auto;
 }
+
 /* Nothing to hover with on a touch screen, so don't hide anything there. */
 @media (hover: none) {
   .board-list-actions {
@@ -482,103 +628,14 @@ a {
     pointer-events: auto;
   }
 }
+
 .board-rename-form {
   display: flex;
   gap: 6px;
   margin: 14px 16px 16px;
 }
-.board-rename-form input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--ink-900);
-}
 
-/* ---------- error boundary ---------- */
-/* Had no styles at all, so a render crash showed a bare h1, a raw exception
-   string and a browser-default button on the app background. Borrows the auth
-   page's centred-card treatment, since it's the same situation: one thing to
-   read, one or two things to do. */
-.error-boundary {
-  min-height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background-color: var(--bg-app);
-  background-image: radial-gradient(var(--ink-200) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.error-boundary-card {
-  width: 100%;
-  max-width: 420px;
-  padding: 32px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  text-align: center;
-}
-.error-boundary-card h1 {
-  margin: 14px 0 8px;
-  font-size: 20px;
-}
-.error-boundary-card > p {
-  margin: 0 0 22px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--ink-600);
-}
-.error-boundary-actions {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-.error-boundary-details {
-  margin-top: 22px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  text-align: left;
-}
-.error-boundary-details summary {
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-400);
-}
-.error-boundary-details code {
-  display: block;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-sunken);
-  color: var(--ink-600);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  line-height: 1.5;
-  /* Exception text is long, unbroken and not ours to reflow - let it wrap
-     rather than stretch the card. */
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* ---------- misc ---------- */
-.page-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--ink-600);
-}
-
-.empty-state {
-  color: var(--ink-400);
-  padding: 40px 0;
-  text-align: center;
-  font-size: 14px;
-}
+/* ----------------------------------------- board: page shell ----------------------------------------- */
 
 .board-page {
   display: flex;
@@ -597,12 +654,14 @@ a {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
 }
+
 .board-title-group {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
 }
+
 .board-title-group h2 {
   font-size: 15px;
   font-weight: 700;
@@ -610,6 +669,7 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .connection-status,
 .save-status {
   display: flex;
@@ -619,23 +679,20 @@ a {
   color: var(--ink-400);
   white-space: nowrap;
 }
+
 .connection-status .dot,
 .save-status .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
+
 .dot-success {
   background: var(--success);
 }
+
 .dot-pending {
   background: var(--ink-400);
-}
-.board-presence {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 }
 
 /* Everything in this row - presence chips, Invite, the chat toggle - is pinned
@@ -649,13 +706,45 @@ a {
   height: 30px;
   border-radius: 999px;
 }
+
 .board-page-toolbar .btn {
   padding: 0 14px;
   font-size: 13px;
 }
+
 .board-page-toolbar .btn-icon {
   width: 30px;
   padding: 0;
+}
+
+.board-page-banner {
+  margin: 12px 16px 0;
+}
+
+.board-canvas-area {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The paper look lives on .whiteboard-page, not here - this is just the
+   surround, and it needs to read as "not the board" so the margin beside a
+   page that doesn't match the window's shape doesn't look drawable. */
+.board-canvas-region {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  background-color: var(--bg-sunken);
+}
+
+/* ------------------------------------------- board: presence ------------------------------------------- */
+
+.board-presence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .board-presence-empty {
@@ -695,434 +784,8 @@ a {
   color: var(--accent);
   opacity: 0.85;
 }
-.board-page-banner {
-  margin: 12px 16px 0;
-}
 
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-.dialog {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 360px;
-  width: calc(100% - 40px);
-  box-shadow: var(--shadow-float);
-}
-.dialog-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.dialog h3 {
-  font-size: 16px;
-}
-.dialog p {
-  font-size: 13.5px;
-  color: var(--ink-600);
-  margin: 0 0 20px;
-}
-.dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* Wider than a confirm prompt, because it holds a list rather than a
-   sentence. */
-.people-dialog {
-  max-width: 420px;
-}
-.people-list {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  /* Long member lists scroll inside the dialog rather than pushing the invite
-     field off the bottom of the screen. */
-  max-height: 320px;
-  overflow-y: auto;
-}
-.people-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--ink-200);
-}
-.people-row:last-child {
-  border-bottom: none;
-}
-.people-row-avatar {
-  position: relative;
-  display: inline-flex;
-  flex-shrink: 0;
-}
-/* Ringed in the dialog's own background so it reads as a badge on the avatar
-   rather than a dot that happens to overlap it. */
-.people-online-dot {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 2px var(--bg-surface);
-}
-.people-row-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.people-row-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.people-invite-form {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-.people-invite-label {
-  display: block;
-  margin-bottom: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-400);
-}
-.people-invite-row {
-  display: flex;
-  gap: 8px;
-}
-.people-invite-row input {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--ink-900);
-}
-.people-feedback {
-  margin: 10px 0 0;
-  font-size: 12.5px;
-}
-.people-feedback.is-success {
-  color: var(--success);
-}
-.people-feedback.is-error {
-  color: var(--danger);
-}
-.people-feedback.is-muted {
-  color: var(--ink-400);
-}
-
-/* Loading / failed / explanatory copy inside the dialog. */
-.people-state {
-  margin: 14px 0 0;
-  font-size: 13px;
-  color: var(--ink-400);
-}
-.people-state.is-error {
-  color: var(--danger);
-}
-.people-note {
-  margin: 16px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  font-size: 12.5px;
-  color: var(--ink-400);
-}
-/* Full-width under its own row, so a failure sits with the person it's about
-   rather than at the bottom of a list that may have scrolled. */
-.people-row-error {
-  flex: 0 0 100%;
-  padding-top: 2px;
-  font-size: 12px;
-  color: var(--danger);
-}
-.people-row {
-  flex-wrap: wrap;
-}
-
-/* Count on the People button - a quiet pill rather than a second label. */
-.btn-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--ink-200);
-  color: var(--ink-600);
-  font-size: 10.5px;
-  font-weight: 700;
-  line-height: 1;
-}
-.btn-active .btn-count {
-  background: var(--accent-soft-border);
-  color: var(--accent);
-}
-
-.page-notice {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--ink-700);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: 10px 13px;
-  margin: 0 0 16px;
-}
-/* A class, not an id - the id is generated by useId() now, which quietly
-   orphaned the old selector. Sits clear of the input above it, and reserves
-   its line so the form doesn't jump as the check resolves. */
-/* Two classes deliberately: this element also carries .people-feedback, whose
-   shorthand margin would win on a tie if the rules ever got reordered. */
-.people-feedback.people-invite-status {
-  margin-top: 16px;
-  min-height: 1.25em;
-}
-
-.board-canvas-area {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-/* The paper look lives on .whiteboard-page, not here - this is just the
-   surround, and it needs to read as "not the board" so the margin beside a
-   page that doesn't match the window's shape doesn't look drawable. */
-.board-canvas-region {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  background-color: var(--bg-sunken);
-}
-
-.chat-panel {
-  width: 280px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border);
-}
-.chat-head {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 700;
-  font-size: 13.5px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.chat-empty {
-  font-size: 12.5px;
-  color: var(--ink-400);
-}
-.chat-msg {
-  display: flex;
-  gap: 8px;
-}
-.chat-msg-body {
-  min-width: 0;
-}
-.chat-msg-who {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-.chat-msg-name {
-  font-weight: 700;
-  font-size: 12.5px;
-}
-.chat-msg-time {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--ink-400);
-}
-.chat-msg-text {
-  font-size: 13.5px;
-  color: var(--ink-700);
-  line-height: 1.45;
-  word-wrap: break-word;
-}
-.chat-input {
-  display: flex;
-  gap: 6px;
-  padding: 10px;
-  border-top: 1px solid var(--border);
-}
-.chat-input input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-app);
-  color: var(--ink-900);
-}
-
-.toolbar {
-  position: absolute;
-  left: 50%;
-  bottom: 22px;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--bg-surface-raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 7px;
-  box-shadow: var(--shadow-float);
-  z-index: 1;
-}
-.toolbar-sep {
-  width: 1px;
-  align-self: stretch;
-  background: var(--border);
-  margin: 2px 4px;
-}
-.tool-btn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ink-700);
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.tool-btn:hover {
-  background: var(--bg-sunken);
-}
-.tool-btn.active {
-  background: var(--accent-soft);
-  border-color: var(--accent-soft-border);
-  color: var(--accent);
-}
-.swatches {
-  display: flex;
-  gap: 5px;
-  padding: 0 4px;
-}
-.swatch {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  padding: 0;
-}
-.swatch.active {
-  border-color: var(--ink-900);
-  box-shadow: 0 0 0 2px var(--bg-surface-raised) inset;
-}
-.brush-size {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-  cursor: pointer;
-}
-.brush-size input[type="range"] {
-  width: 68px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* Fixed box so the slider never shifts as the dot inside it grows. */
-.brush-preview {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-.brush-preview-dot {
-  border-radius: 50%;
-  transition: width 0.12s ease, height 0.12s ease, background 0.12s ease;
-}
-/* An eraser doesn't lay down colour, so it previews as an outline - showing it
-   filled in the current pen colour would say the opposite of what it does. */
-.brush-preview-dot.is-eraser {
-  background: transparent;
-  border: 1.5px solid var(--ink-400);
-}
-
-/* Covers exactly the same box as the canvas - useCursorOverlay measures it to
-   recover the world -> screen transform. */
-.cursor-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.cursor-flag {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  pointer-events: none;
-  transform: translate(-2px, -2px);
-  z-index: 2;
-}
-.cursor-flag-tip {
-  width: 11px;
-  height: 11px;
-  border-radius: 50% 50% 50% 2px;
-  transform: rotate(-45deg);
-  box-shadow: var(--shadow-sm);
-  background: var(--cursor-color, var(--accent));
-}
-.cursor-flag-tag {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #fff;
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  box-shadow: var(--shadow-sm);
-  background: var(--cursor-color, var(--accent));
-}
+/* --------------------------------------------- board: canvas --------------------------------------------- */
 
 .whiteboard-container {
   position: relative;
@@ -1153,6 +816,7 @@ a {
 .whiteboard-container.is-disabled {
   cursor: not-allowed;
 }
+
 .whiteboard-container.is-disabled canvas {
   pointer-events: none;
 }
@@ -1198,7 +862,438 @@ a {
   display: block;
 }
 
-/* ---------- responsive (narrow screens) ---------- */
+/* -------------------------------------------- board: toolbar -------------------------------------------- */
+
+.toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 7px;
+  box-shadow: var(--shadow-float);
+  z-index: 1;
+}
+
+.toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin: 2px 4px;
+}
+
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-700);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.tool-btn:hover {
+  background: var(--bg-sunken);
+}
+
+.tool-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--accent);
+}
+
+.swatches {
+  display: flex;
+  gap: 5px;
+  padding: 0 4px;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+}
+
+.swatch.active {
+  border-color: var(--ink-900);
+  box-shadow: 0 0 0 2px var(--bg-surface-raised) inset;
+}
+
+.brush-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.brush-size input[type="range"] {
+  width: 68px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Fixed box so the slider never shifts as the dot inside it grows. */
+.brush-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.brush-preview-dot {
+  border-radius: 50%;
+  transition: width 0.12s ease, height 0.12s ease, background 0.12s ease;
+}
+
+/* An eraser doesn't lay down colour, so it previews as an outline - showing it
+   filled in the current pen colour would say the opposite of what it does. */
+.brush-preview-dot.is-eraser {
+  background: transparent;
+  border: 1.5px solid var(--ink-400);
+}
+
+/* -------------------------------------------- board: cursors -------------------------------------------- */
+
+/* Covers exactly the same box as the canvas - useCursorOverlay measures it to
+   recover the world -> screen transform. */
+.cursor-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cursor-flag {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+  transform: translate(-2px, -2px);
+  z-index: 2;
+}
+
+.cursor-flag-tip {
+  width: 11px;
+  height: 11px;
+  border-radius: 50% 50% 50% 2px;
+  transform: rotate(-45deg);
+  box-shadow: var(--shadow-sm);
+  background: var(--cursor-color, var(--accent));
+}
+
+.cursor-flag-tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  background: var(--cursor-color, var(--accent));
+}
+
+/* ----------------------------------------------- board: chat ----------------------------------------------- */
+
+.chat-panel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+}
+
+.chat-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 13.5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-empty {
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+.chat-msg {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-msg-body {
+  min-width: 0;
+}
+
+.chat-msg-who {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.chat-msg-name {
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+.chat-msg-time {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-400);
+}
+
+.chat-msg-text {
+  font-size: 13.5px;
+  color: var(--ink-700);
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.chat-input {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* Sunken rather than raised: it sits inside a panel, not on the page. */
+.chat-input .input {
+  background: var(--bg-app);
+}
+
+/* -------------------------------------- board: people dialog -------------------------------------- */
+
+/* Wider than a confirm prompt, because it holds a list rather than a
+   sentence. */
+.people-dialog {
+  max-width: 420px;
+}
+
+.people-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /* Long member lists scroll inside the dialog rather than pushing the invite
+     field off the bottom of the screen. */
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.people-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ink-200);
+}
+
+.people-row:last-child {
+  border-bottom: none;
+}
+
+.people-row-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* Ringed in the dialog's own background so it reads as a badge on the avatar
+   rather than a dot that happens to overlap it. */
+.people-online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 2px var(--bg-surface);
+}
+
+.people-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.people-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.people-invite-form {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.people-invite-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+
+.people-invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.people-feedback {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+}
+
+.people-feedback.is-success {
+  color: var(--success);
+}
+
+.people-feedback.is-error {
+  color: var(--danger);
+}
+
+.people-feedback.is-muted {
+  color: var(--ink-400);
+}
+
+/* Loading / failed / explanatory copy inside the dialog. */
+.people-state {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--ink-400);
+}
+
+.people-state.is-error {
+  color: var(--danger);
+}
+
+.people-note {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--ink-400);
+}
+
+/* Full-width under its own row, so a failure sits with the person it's about
+   rather than at the bottom of a list that may have scrolled. */
+.people-row-error {
+  flex: 0 0 100%;
+  padding-top: 2px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* A class, not an id - the id is generated by useId() now, which quietly
+   orphaned the old selector. Sits clear of the input above it, and reserves
+   its line so the form doesn't jump as the check resolves. */
+/* Two classes deliberately: this element also carries .people-feedback, whose
+   shorthand margin would win on a tie if the rules ever got reordered. */
+.people-feedback.people-invite-status {
+  margin-top: 16px;
+  min-height: 1.25em;
+}
+
+/* -------------------------------------------- error boundary -------------------------------------------- */
+
+.error-boundary-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.error-boundary-card h1 {
+  margin: 14px 0 8px;
+  font-size: 20px;
+}
+
+.error-boundary-card > p {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-600);
+}
+
+.error-boundary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.error-boundary-details {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.error-boundary-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-400);
+}
+
+.error-boundary-details code {
+  display: block;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  color: var(--ink-600);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  /* Exception text is long, unbroken and not ours to reflow - let it wrap
+     rather than stretch the card. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------- responsive (narrow screens) ------------------------------- */
+
 @media (max-width: 720px) {
   .app-header {
     padding: 0 12px;

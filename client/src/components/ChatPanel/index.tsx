@@ -55,6 +55,7 @@ export function ChatPanel({ messages, currentUserId, onSend, onClose }: ChatPane
       </div>
       <form className="chat-input" onSubmit={handleSubmit}>
         <input
+          className="input input-grow"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Message the board…"

@@ -188,6 +188,7 @@ export function PeopleDialog({
           <div className="people-invite-row">
             <input
               id={usernameId}
+              className="input input-grow"
               type="text"
               placeholder="username"
               value={username}

@@ -31,6 +31,7 @@ export function SignupPage() {
         <label>
           Email
           <input
+            className="input input-lg"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -41,6 +42,7 @@ export function SignupPage() {
         <label>
           Username
           <input
+            className="input input-lg"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
@@ -50,6 +52,7 @@ export function SignupPage() {
         <label>
           Password
           <input
+            className="input input-lg"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

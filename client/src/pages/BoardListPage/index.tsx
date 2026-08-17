@@ -42,6 +42,7 @@ export function BoardListPage() {
 
         <form className="new-board-form" onSubmit={handleCreate}>
           <input
+            className="input input-grow input-lg"
             value={newBoardName}
             onChange={(e) => setNewBoardName(e.target.value)}
             placeholder="New board name"
@@ -77,6 +78,7 @@ export function BoardListPage() {
                     <BoardThumbnail boardId={board.id} />
                     <div className="board-rename-form">
                       <input
+                        className="input input-grow"
                         value={renameValue}
                         onChange={(e) => setRenameValue(e.target.value)}
                         autoFocus
