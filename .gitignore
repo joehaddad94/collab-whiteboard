@@ -11,3 +11,6 @@ dist/
 # db files (created at runtime, not checked in)
 *.sqlite
 *.sqlite3
+
+# local decision log - review prep, not part of the submission
+ARCHITECTURE.md
