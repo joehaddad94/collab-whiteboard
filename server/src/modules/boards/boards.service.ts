@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../errors.js";
 import { findUserByUsername } from "../auth/auth.repository.js";
 import * as boardsRepository from "./boards.repository.js";
@@ -14,10 +13,6 @@ function validateName(name: unknown): string {
     throw new ValidationError("Board name is required (max 100 characters)");
   }
   return trimmed;
-}
-
-function generateInviteCode(): string {
-  return crypto.randomBytes(16).toString("hex");
 }
 
 function requireMembership(boardId: number, userId: number) {
@@ -51,8 +46,7 @@ export function listBoardsForUser(userId: number) {
 
 export function createBoard(userId: number, rawName: unknown) {
   const name = validateName(rawName);
-  const inviteCode = generateInviteCode();
-  const boardId = boardsRepository.insertBoard(name, userId, inviteCode);
+  const boardId = boardsRepository.insertBoard(name, userId);
   boardsRepository.insertMembership(boardId, userId, "owner");
   return getBoardForUser(boardId, userId);
 }
@@ -64,9 +58,8 @@ export function getBoardForUser(boardId: number, userId: number) {
     throw new NotFoundError("Board not found");
   }
 
-  const { invite_code: _inviteCode, ...boardFields } = board;
   return {
-    ...boardFields,
+    ...board,
     data: JSON.parse(board.data) as Stroke[],
     role: membership.role,
   };

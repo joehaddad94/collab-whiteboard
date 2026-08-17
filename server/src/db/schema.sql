@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS Board (
   name TEXT NOT NULL,
   owner_id INTEGER NOT NULL REFERENCES User(id),
   data TEXT NOT NULL DEFAULT '[]',
-  invite_code TEXT NOT NULL UNIQUE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

@@ -8,7 +8,6 @@ export interface BoardRow {
   name: string;
   owner_id: number;
   data: string;
-  invite_code: string;
   created_at: string;
   updated_at: string;
 }
@@ -59,14 +58,10 @@ export function findBoardSummariesForUser(userId: number): BoardListRow[] {
     .all(userId) as unknown as BoardListRow[];
 }
 
-export function insertBoard(
-  name: string,
-  ownerId: number,
-  inviteCode: string,
-): number {
+export function insertBoard(name: string, ownerId: number): number {
   const result = db
-    .prepare("INSERT INTO Board (name, owner_id, invite_code) VALUES (?, ?, ?)")
-    .run(name, ownerId, inviteCode);
+    .prepare("INSERT INTO Board (name, owner_id) VALUES (?, ?)")
+    .run(name, ownerId);
   return Number(result.lastInsertRowid);
 }
 
@@ -93,7 +88,7 @@ export function findBoardSummaryById(
 export function findBoardById(boardId: number): BoardRow | undefined {
   return db
     .prepare(
-      "SELECT id, name, owner_id, data, invite_code, created_at, updated_at FROM Board WHERE id = ?",
+      "SELECT id, name, owner_id, data, created_at, updated_at FROM Board WHERE id = ?",
     )
     .get(boardId) as BoardRow | undefined;
 }
