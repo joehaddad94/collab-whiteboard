@@ -90,10 +90,6 @@ export function saveBoardData(boardId: number, userId: number, data: unknown) {
   return { id: boardId, data };
 }
 
-// The socket-side autosave writing the server's own board session, so there's
-// no requesting user to authorize and nothing to re-validate - these strokes
-// were checked as they arrived over the socket, and only ever came from
-// members (join-board enforces that).
 export function persistBoardStrokes(boardId: number, strokes: Stroke[]) {
   boardsRepository.updateBoardData(boardId, strokes);
 }
@@ -111,10 +107,6 @@ function requireUsername(raw: unknown): string {
   return username;
 }
 
-// Answers "can I invite this person?" before an invite is attempted, so the
-// dialog can say so while you're still typing rather than only on submit.
-// Owner-only for the same reason invite is: it confirms whether a username
-// exists, and the narrower the audience for that the better (see ADR-043).
 export function lookupInvitee(
   boardId: number,
   userId: number,
@@ -145,8 +137,6 @@ export function inviteMember(
   requireOwner(boardId, userId);
   const username = requireUsername(rawUsername);
 
-  // Case-insensitive, matching the unique index on User.username - so an
-  // invite works whether or not you remembered how they capitalised it.
   const targetUser = findUserByUsername(username);
   if (!targetUser) {
     throw new NotFoundError(`No user named "${username}"`);
@@ -180,8 +170,6 @@ export function removeMember(
   userId: number,
   targetUserId: number,
 ) {
-  // Anyone can remove themselves - that's leaving the board. Removing someone
-  // else is the owner's call.
   const membership = requireMembership(boardId, userId);
   if (targetUserId !== userId && membership.role !== "owner") {
     throw new ForbiddenError("Only the board owner can remove other people");

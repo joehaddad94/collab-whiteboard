@@ -44,7 +44,6 @@ export function rename(req: AuthenticatedRequest, res: Response) {
 export function remove(req: AuthenticatedRequest, res: Response) {
   const boardId = parseId(req.params.id);
   boardsService.deleteBoardForOwner(boardId, req.user!.userId);
-  // The row is gone, so a queued autosave has nothing left to write to.
   cancelPendingSave(boardId);
   evictAllFromBoard(boardId);
   res.status(204).send();

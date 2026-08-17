@@ -20,16 +20,8 @@ const openApiSpec = loadYaml(
   readFileSync(join(__dirname, "../openapi.yaml"), "utf-8"),
 ) as JsonObject;
 
-// A board's strokes go up as one JSON array, and that adds up faster than the
-// 100kb body-parser default: ~50 strokes of 40 points is already ~97kb, which
-// a real drawing session passes quickly. This is a ceiling to stop something
-// absurd, not a budget any normal board should get near.
 const JSON_BODY_LIMIT = "5mb";
 
-// body-parser rejects an oversized or malformed body before any route runs,
-// using its own error shape rather than an AppError. Left unmapped these fall
-// through to the 500 branch below, which told the client "Internal server
-// error" for what is squarely a problem with the request it sent.
 const BODY_PARSER_MESSAGES: Record<string, string> = {
   "entity.too.large": `Request body is too large (limit ${JSON_BODY_LIMIT})`,
   "entity.parse.failed": "Request body is not valid JSON",

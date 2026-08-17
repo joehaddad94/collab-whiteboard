@@ -18,10 +18,6 @@ const io = new Server(httpServer, {
     origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
     credentials: true,
   },
-  // Defaults are 25s/20s, so a client that vanishes isn't noticed for 45
-  // seconds. The frontend covers the case the browser can see (see
-  // useBoardSocket), but a dead server or a silent partition leaves the
-  // heartbeat as the only signal - 10s/5s detects those in about 15.
   pingInterval: 10_000,
   pingTimeout: 5_000,
 });

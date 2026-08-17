@@ -37,11 +37,6 @@ export function getOrCreateSession(
   return session;
 }
 
-// connectedUsers is keyed by socket id, not user id, because eviction and
-// disconnect both work per-socket - but the same user can hold several sockets
-// on one board (two tabs, or a reconnect racing the old socket's cleanup).
-// Presence is a per-user concept, so it goes through these two helpers rather
-// than reading the map directly.
 export function listUniqueUsers(session: BoardSession): ConnectedUser[] {
   const byUserId = new Map<number, ConnectedUser>();
   for (const user of session.connectedUsers.values()) {

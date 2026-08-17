@@ -21,12 +21,6 @@ function isValidPoint(point: unknown): point is { x: number; y: number } {
   );
 }
 
-// Every handler below runs synchronously against the DB/in-memory session -
-// an unexpected throw (a DB error, anything not already handled by the
-// explicit validation checks) would otherwise propagate as an uncaught
-// exception and crash the process for every connected client, not just the
-// one that triggered it. This mirrors the centralized Express error handler
-// (ADR-021) for the socket side.
 function withErrorHandling<T extends unknown[]>(
   socket: Socket,
   handler: (...args: T) => void,
@@ -88,11 +82,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         username: user.username,
       });
 
-      // inProgressStrokes is part of the join snapshot, not just `strokes`:
-      // a stroke someone is still drawing right now isn't in `strokes` yet,
-      // and its later stroke-point/stroke-end events carry only a strokeId -
-      // so without it a client that joins mid-stroke has nothing to attach
-      // those to and never sees that stroke at all.
       socket.emit("board-joined", {
         strokes: session.strokes,
         inProgressStrokes: Array.from(session.inProgressStrokes.values()),
@@ -100,8 +89,6 @@ export function registerBoardHandlers(io: Server, socket: Socket) {
         messages: chatService.getRecentMessages(boardId),
       });
 
-      // Only announce an arrival that changes the room's presence - a user's
-      // second tab is not a new person joining.
       if (!alreadyPresent) {
         socket.to(roomName).emit("user-joined", {
           userId: user.userId,
@@ -332,22 +319,14 @@ function leaveBoard(socket: Socket, boardId: number) {
     socket.data.currentBoardId = undefined;
   }
 
-  // A stroke dropped mid-draw never reaches `strokes`, so the room has to be
-  // told to drop it too - otherwise it sits on every other canvas as a
-  // fragment that can't be finished, undone, or redrawn away.
   for (const strokeId of abandonedStrokeIds) {
     socket.to(roomName).emit("stroke-removed", { strokeId });
   }
 
-  // Same reasoning as the join side: only announce the departure once the
-  // user's last socket for this board is gone, so closing one of two tabs
-  // doesn't remove them from everyone else's presence list.
   if (!session || !hasUserConnection(session, user.userId)) {
     socket.to(roomName).emit("user-left", { userId: user.userId });
   }
 
-  // Last one out: the session - and everything drawn since the last write -
-  // is about to be discarded, so this is the final chance to persist it.
   if (session && session.connectedUsers.size === 0) {
     flushPendingSave(boardId);
   }
