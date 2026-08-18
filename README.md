@@ -9,6 +9,19 @@ chat, and share boards. Everything live over WebSockets.
 Two sibling folders rather than a monorepo. The only thing they share is a
 handful of type definitions, which are duplicated on purpose.
 
+## Dependencies
+
+**Node 24 or newer.** The server uses the built-in `node:sqlite`, which earlier
+versions don't have. npm ships with Node.
+
+Nothing else to install — no Docker, no database server, no external services, no
+API keys.
+
+| | |
+|---|---|
+| Client | React 19, React Router 7, Vite, TypeScript, socket.io-client |
+| Server | Express 5, Socket.io 4, `node:sqlite`, jsonwebtoken, bcryptjs, cookie-parser, cors, dotenv, swagger-ui-express |
+
 ## Running it
 
 Node 24+, two terminals.
@@ -47,6 +60,20 @@ Setup detail, environment variables and scripts are in
 - Invite people by username, as Owner or Editor
 - Real accounts: signup, login, logout
 - Responsive down to phone widths
+
+## Assumptions
+
+The brief leaves some things open. Where it did, this is the reading I went with.
+
+- **Boards are many, not one.** Each has its own members, so "the whiteboard" is
+  whichever board you opened.
+- **Presence is per board** — the user list shows who is here, not who is using the app.
+- **The eraser clears pixels, not whole strokes**, so part of a line can be rubbed out.
+- **Undo is per user.** You take back your own last stroke, never someone else's.
+- **Any member can Clear**, behind a confirmation.
+- **Saving is automatic.** There is no Save button and nothing to forget.
+- **Responsive means the board scales.** A bigger screen shows the same surface
+  larger, not more of it, so a drawing lands in the same place for everyone.
 
 ## Documentation
 
