@@ -1,151 +1,196 @@
 # Collab Whiteboard — Server
 
-Express + TypeScript + Socket.io backend for the collaborative whiteboard.
-REST for auth/CRUD, Socket.io for everything real-time (drawing, cursors,
-presence, undo/redo, chat). SQLite (`node:sqlite`) for persistence.
+Express + TypeScript. REST for auth and CRUD, Socket.io for everything live,
+SQLite (`node:sqlite`) for storage.
 
-See the root [`README.md`](../README.md) for the project overview and how
-to run frontend + backend together, and [`client/README.md`](../client/README.md)
-for the frontend specifically.
+See the [root README](../README.md) for running both halves together, and
+[`client/README.md`](../client/README.md) for the frontend.
 
 ## Setup
 
-Requires Node 24+.
+Node 24+.
 
 ```bash
 cd server
 npm install
-cp .env.example .env   # then edit JWT_SECRET - see below
+cp .env.example .env    # set JWT_SECRET before starting
 npm run dev
 ```
 
-The server listens on `http://localhost:4000` by default and creates
-`data/whiteboard.sqlite` on first run (schema applied automatically, safe
-to re-run).
+Listens on `http://localhost:4000`. The database file and schema are created on
+first run, and re-applied harmlessly on every start.
 
-### Environment variables (`.env`)
+### Environment
 
-| Variable | Default | Notes |
+| Variable | Default | |
 |---|---|---|
 | `PORT` | `4000` | |
-| `CLIENT_ORIGIN` | `http://localhost:5173` | Must be an exact origin, not `*` — cookies require it, since credentials don't work with a wildcard CORS origin. |
-| `JWT_SECRET` | *(required, no default)* | Any long random string for local dev, e.g. `openssl rand -hex 32`. |
-| `DB_FILE` | `./data/whiteboard.sqlite` | SQLite file path, created automatically. |
+| `CLIENT_ORIGIN` | `http://localhost:5173` | Must be an exact origin. Wildcard CORS can't carry cookies. |
+| `JWT_SECRET` | none, required | `openssl rand -hex 32` |
+| `DB_FILE` | `./data/whiteboard.sqlite` | |
 
-## Scripts
+### Scripts
 
-| Command | Does |
+| | |
 |---|---|
-| `npm run dev` | Run with `tsx watch` — auto-restarts on file changes. |
-| `npm run build` | Type-check and compile to `dist/`. |
-| `npm start` | Run the compiled build (`dist/index.js`). |
+| `npm run dev` | `tsx watch`, restarts on save |
+| `npm run build` | compile to `dist/` |
+| `npm start` | run the build |
 
-## REST API
+`build` also copies `schema.sql` into `dist/`, since `tsc` only emits JavaScript
+and the server reads that file at startup.
 
-Interactive docs (Swagger UI) are served by the app itself once it's
-running:
+## Layout
 
-**http://localhost:4000/api-docs**
+```
+src/
+  app.ts, index.ts        express app, http server, socket auth
+  middleware/auth.ts      requireAuth, JWT sign/verify
+  modules/                auth, boards, chat
+    *.routes.ts           url -> controller, auth requirements
+    *.controller.ts       read the request, call the service, pick a status
+    *.service.ts          rules: validation and permissions
+    *.repository.ts       SQL
+  sockets/                board handlers, per-board session state, autosave
+  db/                     connection and schema.sql
+```
 
-The full request/response spec lives in [`openapi.yaml`](./openapi.yaml).
-Everything below is a summary — that's the authoritative reference.
+Controllers don't write SQL. Repositories don't make decisions. Errors are
+thrown as `AppError` subclasses and turned into responses in one place, in
+`app.ts`.
 
-| Method | Path | Auth | Notes |
+## REST
+
+Swagger UI at **http://localhost:4000/api-docs** while the server is running.
+[`openapi.yaml`](./openapi.yaml) is the full spec; the table below is a summary.
+
+| Method | Path | Auth | |
 |---|---|---|---|
 | POST | `/api/auth/signup` | — | `{ email, password, username }` |
-| POST | `/api/auth/login` | — | `{ identifier, password }` — identifier is a username or email |
-| POST | `/api/auth/logout` | — | Clears the session cookie |
-| GET | `/api/auth/me` | session | Current user |
-| GET | `/api/boards` | session | Boards the user is a member of |
-| POST | `/api/boards` | session | Create a board (creator becomes owner) |
-| GET | `/api/boards/:id` | member | Includes current strokes (`data`) |
-| PATCH | `/api/boards/:id` | owner | Rename |
-| DELETE | `/api/boards/:id` | owner | Cascades memberships + chat history |
-| PUT | `/api/boards/:id/data` | member | Replaces the whole strokes array. The app itself never calls this — boards autosave server-side; it exists for a non-socket client that wants to write one. |
-| GET | `/api/boards/:id/members` | member | List members with roles |
-| POST | `/api/boards/:id/members` | owner | Invite by username (case-insensitive), immediate `editor` membership |
-| GET | `/api/boards/:id/members/lookup?username=` | owner | Whether that username exists, is already a member, or is you — so the invite UI can say so before you submit |
-| DELETE | `/api/boards/:id/members/:userId` | member | Remove someone (owner only) **or** yourself (anyone) — leaving. The owner can't leave their own board — they delete it instead |
+| POST | `/api/auth/login` | — | `{ identifier, password }`, username or email |
+| POST | `/api/auth/logout` | — | clears the cookie |
+| GET | `/api/auth/me` | session | current user |
+| GET | `/api/boards` | session | boards you're a member of |
+| POST | `/api/boards` | session | creator becomes owner |
+| GET | `/api/boards/:id` | member | includes the strokes in `data` |
+| PATCH | `/api/boards/:id` | owner | rename |
+| DELETE | `/api/boards/:id` | owner | cascades memberships and chat |
+| PUT | `/api/boards/:id/data` | member | replaces the whole strokes array |
+| GET | `/api/boards/:id/members` | member | members and roles |
+| GET | `/api/boards/:id/members/lookup?username=` | owner | can this person be invited |
+| POST | `/api/boards/:id/members` | owner | invite by username, joins as `editor` |
+| DELETE | `/api/boards/:id/members/:userId` | member | remove someone, or leave |
 
-Conventions worth knowing before you poke at this with curl/Postman:
-- **404, not 403, for "you can't see this"** — a board that exists but you're
-  not a member of returns 404, same as one that doesn't exist at all. 403 is
-  reserved for "you can see it, you're a member, you just can't do *this*"
-  (e.g. a non-owner trying to rename).
-- **Login never confirms whether an identifier exists** — an unknown
-  username/email and a wrong password both return the same generic 401, to
-  prevent account enumeration.
-- **Inviting an existing member is a no-op, not an error** — returns 200
-  instead of 201 with the same body, rather than a conflict.
-- **The lookup endpoint never 404s for a missing user** — "no such username"
-  is a successful answer to the question it was asked. It 404s only when the
-  *board* isn't visible to you. It's owner-scoped rather than open to any
-  logged-in user, because it does confirm whether a username exists.
+Four things that will surprise you with curl:
+
+**A board you can't see returns 404, not 403.** Same as one that doesn't exist.
+403 means you're a member but lack the role, like a non-owner renaming. The
+membership check only queries `BoardMember`, so it never learns whether the
+board exists.
+
+**Login gives the same 401 for an unknown identifier and a wrong password.**
+Otherwise you could enumerate accounts by watching the responses.
+
+**Inviting an existing member returns 200 instead of 201**, same body. It's a
+no-op, not a conflict.
+
+**The lookup endpoint doesn't 404 for a missing user.** "No such username" is a
+successful answer to what it was asked; it only 404s when the board isn't
+visible to you. It's owner-only because it does confirm whether a username
+exists.
+
+`PUT /:id/data` is there for completeness. The app doesn't call it — boards
+autosave server-side.
 
 ## Authentication
 
-A JWT is issued on signup/login and set as an **httpOnly cookie** named
-`token`. It's the single credential for both REST and Socket.io:
+Signup and login issue a JWT and set it as an httpOnly cookie named `token`.
+That one cookie is the credential for both REST and Socket.io. There is no
+`Authorization` header anywhere.
 
-- **REST**: the `requireAuth` middleware reads the cookie, verifies it, and
-  attaches the decoded `{ userId, username }` to `req.user`. Client requests
-  need `credentials: 'include'` (fetch) or equivalent to send the cookie
-  cross-origin.
-- **Socket.io**: a connection middleware (`io.use(...)` in `index.ts`) reads
-  the same cookie from the handshake headers, verifies it the same way, and
-  rejects the connection outright if it's missing or invalid — a socket
-  never gets to register any event handlers without a valid session.
+REST goes through `requireAuth`, which verifies the cookie and puts
+`{ userId, username }` on `req.user`. Browsers need `credentials: 'include'`
+to send it cross-origin.
 
-There's no `Authorization` header anywhere in this API — the browser sends
-the cookie automatically on same-origin-configured requests, and a non-browser
-client (curl, a test script) needs to carry it explicitly (`-b cookies.txt`
-with curl, or read `Set-Cookie` and pass it back as `Cookie` for a raw
-Socket.io client).
+Sockets are checked once, in `io.use(...)` in `index.ts`, before any handler is
+registered. It reads the same cookie off the handshake request, verifies it,
+and looks the user up in the database. The username used for broadcasts comes
+from that lookup, not from the token.
 
-## WebSocket (Socket.io) events
+With curl, use `-b cookies.txt -c cookies.txt`. For a raw Socket.io client,
+read `Set-Cookie` from login and pass it back as a `Cookie` header.
 
-Connect to the same origin as the REST API (`http://localhost:4000` by
-default) with `withCredentials: true` so the auth cookie rides along on the
-handshake. All events below happen after that connection is authenticated —
-there's no separate WS-level login step.
+## Socket events
 
-### Client → Server
+Connect to the same origin as the REST API with `withCredentials: true`.
+Authentication happens during the handshake, so there's no login event.
 
-| Event | Payload | Notes |
+### Client to server
+
+| Event | Payload | |
 |---|---|---|
-| `join-board` | `{ boardId }` | Rejects (via `error`) if you're not a member. Leaves any previously-joined board first. |
-| `leave-board` | `{ boardId }` | For SPA navigation away from a board without disconnecting the socket. |
-| `stroke-start` | `{ strokeId, tool, color, brushSize, point }` | Starts a new stroke. `tool` is `"pen"` or `"eraser"` — erasing is a stroke, not a separate mechanism. |
-| `stroke-point` | `{ strokeId, point }` | One point at a time, streamed while drawing — not batched. |
-| `stroke-end` | `{ strokeId }` | Finishes the stroke, pushes it onto your undo stack. |
-| `clear-board` | — | Empties the board **and everyone's** undo/redo stacks. Not itself undoable. |
-| `undo` | — | Pops your own last stroke. Silent no-op if your stack is empty. Can't undo someone else's stroke. |
-| `redo` | — | Restores your own last undone stroke. |
-| `cursor-move` | `{ x, y }` | Throttle this client-side (the frontend does ~25/sec) — it's rebroadcast to everyone else on the board. |
-| `chat-message` | `{ text }` | 1–2000 characters after trimming. |
+| `join-board` | `{ boardId }` | leaves any previous board first |
+| `leave-board` | `{ boardId }` | for SPA navigation, keeps the socket |
+| `stroke-start` | `{ strokeId, tool, color, brushSize, point }` | `tool` is `pen` or `eraser` |
+| `stroke-point` | `{ strokeId, point }` | one point per message |
+| `stroke-end` | `{ strokeId }` | commits the stroke, pushes your undo stack |
+| `undo` / `redo` | — | your own strokes only |
+| `clear-board` | — | wipes the board and everyone's stacks |
+| `cursor-move` | `{ x, y }` | throttle it; the client sends ~25/sec |
+| `chat-message` | `{ text }` | 1–2000 characters after trimming |
 
-### Server → Client
+Rejected actions come back on `error`, one channel for everything.
 
-| Event | Payload | Notes |
+### Server to client
+
+| Event | Payload | |
 |---|---|---|
-| `board-joined` | `{ strokes, inProgressStrokes, users, messages }` | Full current state, sent only to you in reply to `join-board`. `inProgressStrokes` are strokes other people are drawing *right now* — they aren't in `strokes` yet, and the `stroke-point`/`stroke-end` events that follow carry only a `strokeId`, so a client joining mid-stroke needs them to have anything to attach those to. `users` is deduplicated per user, not per socket. Also what a reconnect resyncs from — there's no "replay missed events," every join/rejoin gets the complete current state. |
-| `user-joined` | `{ userId, username }` | Broadcast to the room when someone else joins. Sent only for a user who wasn't already on the board — a second tab doesn't re-announce them. |
-| `user-left` | `{ userId }` | Broadcast on `leave-board` or disconnect, and only once the user's **last** socket for that board is gone — closing one of two tabs doesn't remove them from everyone's presence list. |
-| `stroke-start` | full stroke object | Rebroadcast to everyone *except* the sender. |
-| `stroke-point` | `{ strokeId, point }` | Rebroadcast, sender excluded. |
-| `stroke-end` | `{ strokeId }` | Rebroadcast, sender excluded. |
-| `board-cleared` | — | Broadcast to the **whole room including the sender**. |
-| `stroke-removed` | `{ strokeId }` | Undo result. Whole room including sender. Also sent when someone disconnects mid-stroke, to drop the unfinished fragment that will never get an end event. |
-| `stroke-restored` | `{ stroke }` | Redo result. Whole room including sender. |
-| `cursor-update` | `{ userId, username, x, y }` | Rebroadcast, sender excluded. |
-| `chat-message` | `{ id, boardId, userId, username, text, createdAt }` | Whole room including the sender — there's no optimistic local echo on the frontend, it just waits for this like everyone else. |
-| `board-saved` | `{ boardId, savedAt }` | The board was written to the database by autosave. Drives the frontend's save indicator — "saved" is something the server reports, not something a client infers. Not sent if the write failed. |
-| `error` | `{ message }` | One generic channel for every rejected action (bad join, invalid chat text, an unexpected server-side error) rather than a bespoke event per failure type. |
-| `removed-from-board` | `{ boardId }` | Sent to a specific user if their membership is revoked while they're connected to that board. |
-| `board-deleted` | `{ boardId }` | Sent to everyone connected to a board if its owner deletes it. |
+| `board-joined` | `{ strokes, inProgressStrokes, users, messages }` | to the joiner only |
+| `user-joined` | `{ userId, username }` | someone arrived |
+| `user-left` | `{ userId }` | their last connection went |
+| `stroke-start` | full stroke | sender excluded |
+| `stroke-point` | `{ strokeId, point }` | sender excluded |
+| `stroke-end` | `{ strokeId }` | sender excluded |
+| `stroke-removed` | `{ strokeId }` | undo, or an abandoned stroke |
+| `stroke-restored` | `{ stroke }` | redo |
+| `board-cleared` | — | whole room |
+| `cursor-update` | `{ userId, username, x, y }` | sender excluded |
+| `chat-message` | `{ id, boardId, userId, username, text, createdAt }` | whole room |
+| `board-saved` | `{ boardId, savedAt }` | autosave wrote to disk |
+| `removed-from-board` | `{ boardId }` | your access was revoked |
+| `board-deleted` | `{ boardId }` | the owner deleted it |
+| `error` | `{ message }` | any rejected action |
 
-A connected client that unexpectedly drops gets Socket.io's default
-reconnection behavior (automatic, exponential backoff) — on reconnect it
-just re-emits `join-board` and gets a fresh `board-joined`, so recovering
-from a dropped connection is identical to joining fresh, no special
-resync logic needed.
+Drawing events exclude the sender because they've already drawn it locally.
+Undo, redo, clear and chat go to the whole room including the sender, because
+the client doesn't apply those optimistically — it waits for the broadcast.
+
+`inProgressStrokes` matters more than it looks. A stroke someone is still
+drawing isn't in `strokes` yet, and the `stroke-point` and `stroke-end` events
+that follow carry only a `strokeId`. Without the in-progress list, a client
+joining mid-stroke has nothing to attach them to and loses the stroke entirely.
+
+`users` is deduplicated per user rather than per socket, and `user-joined` and
+`user-left` only fire when someone's presence actually changes. Two tabs is one
+person.
+
+### Reconnecting
+
+Socket.io reconnects on its own with backoff. The client re-emits `join-board`
+and gets a fresh `board-joined`, so recovery is the same code path as joining
+for the first time. There's no event replay to get wrong.
+
+The heartbeat is set to 10s/5s rather than the 25s/20s defaults, so a dead
+connection is noticed in about fifteen seconds instead of forty-five.
+
+## Notes
+
+Live strokes are held in memory per board and written by a debounced autosave,
+plus a flush when the last person leaves. Nothing is written per stroke.
+
+There are no migrations. `schema.sql` runs with `CREATE TABLE IF NOT EXISTS`,
+which means schema changes don't touch an existing database — delete
+`data/whiteboard.sqlite` and let it rebuild.
+
+Board state lives in one process. Running more than one instance needs Redis
+and the Socket.io adapter.
