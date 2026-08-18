@@ -1,120 +1,117 @@
 # Collab Whiteboard
 
-A real-time collaborative whiteboard: multiple users draw on the same canvas
-together, see each other's cursors, chat, and share boards — all synced live
-over WebSockets.
+Several people draw on the same canvas at once, see each other's cursors,
+chat, and share boards. Everything live over WebSockets.
 
-- **`client/`** — React + TypeScript (Vite)
-- **`server/`** — Express + TypeScript + Socket.io + SQLite
+- **`client/`** — React 19 + TypeScript, Vite
+- **`server/`** — Express 5 + TypeScript + Socket.io + SQLite
 
-Two plain sibling folders, not a monorepo — see [Technical Decisions](#technical-decisions).
+Two sibling folders rather than a monorepo. The only thing they share is a
+handful of type definitions, which are duplicated on purpose.
 
-## Quick start
+## Running it
 
-Requires Node 24+. Two terminals:
+Node 24+, two terminals.
 
 ```bash
-# Terminal 1 - backend
+# backend
 cd server
 npm install
-cp .env.example .env   # edit JWT_SECRET to any random string
+cp .env.example .env    # set JWT_SECRET to any random string
 npm run dev             # http://localhost:4000
 
-# Terminal 2 - frontend
+# frontend
 cd client
 npm install
-cp .env.example .env   # defaults are fine
+cp .env.example .env
 npm run dev             # http://localhost:5173
 ```
 
-Open `http://localhost:5173`, sign up, create a board, and open the same
-board in a second browser tab (or an incognito window, for a second account)
-to see the real-time sync.
+Open `http://localhost:5173` and sign up. To see the collaboration, open the
+same board in a second browser tab, or in an incognito window as a second
+account.
 
-Full setup details, environment variables, and scripts:
-[`server/README.md`](./server/README.md) · [`client/README.md`](./client/README.md)
+Setup detail, environment variables and scripts are in
+[`server/README.md`](./server/README.md) and
+[`client/README.md`](./client/README.md).
 
-## Features
+## What it does
 
-- Freehand drawing with color and brush size, plus an eraser
-- Real-time sync — drawing, erasing, and undo/redo are streamed live to
-  everyone on the board, not just visible after a refresh
-- Live cursors and presence — see who's connected and where their cursor is
-- Per-user undo/redo and a whole-board Clear
-- Save/load — no Save button: the server autosaves a board as it changes and
-  flushes when the last person leaves, so work can't be lost by forgetting.
-  A board reloads exactly as it was left
-- Real-time per-board chat, with history
-- Invite collaborators by email (Owner/Editor roles)
-- Real authentication (signup/login/logout, not just a display name)
+- Freehand drawing, colour and brush size, eraser
+- Live sync: strokes stream point by point as they're drawn, so you watch a
+  line appear rather than see it pop in when finished
+- Cursors and presence for everyone on the board
+- Per-user undo and redo, plus a Clear that wipes the board for everyone
+- Autosave, with no Save button. The board reloads exactly as it was left
+- Per-board chat with history
+- Invite people by username, as Owner or Editor
+- Real accounts: signup, login, logout
 - Responsive down to phone widths
 
-Full feature walkthrough: [`client/README.md`](./client/README.md#features)
+## Documentation
 
-## API & WebSocket documentation
-
-- **REST**: interactive docs at `http://localhost:4000/api-docs` once the
-  server is running (Swagger UI), spec source in
-  [`server/openapi.yaml`](./server/openapi.yaml)
-- **WebSocket**: OpenAPI has no format for Socket.io events, so those are
-  documented directly in [`server/README.md`](./server/README.md#websocket-socketio-events)
-- **Authentication**: [`server/README.md`](./server/README.md#authentication)
+- **REST** — Swagger UI at `http://localhost:4000/api-docs` while the server
+  runs. Spec in [`server/openapi.yaml`](./server/openapi.yaml)
+- **WebSocket** — OpenAPI has no format for socket events, so they're
+  documented in [`server/README.md`](./server/README.md#socket-events)
+- **Frontend architecture** — [`client/README.md`](./client/README.md)
 
 ## Technical decisions
 
-This is a condensed summary of the choices that shaped the project — the
-full decision log, with alternatives considered and trade-offs for every
-entry, is kept locally in `ARCHITECTURE.md` (gitignored, not part of this
-submission) as live-review prep material.
+**Express, not Nest or Next.** The app needs a long-lived WebSocket server
+alongside a REST API. Next's deployment model assumes request-response and
+would have meant bolting a custom Node server onto it anyway, which cancels
+most of the benefit. Nest brings structure this size of project doesn't need.
 
-**Backend stack** — Express (not Nest.js/Next.js), `better-sqlite3`-style
-synchronous SQLite via `node:sqlite` (no ORM, no migration framework —
-`schema.sql` with `CREATE TABLE IF NOT EXISTS`), Socket.io over the raw
-WebSocket API for reconnection handling and room-based broadcasting. All
-three follow the same philosophy: minimal and transparent over
-feature-rich, since every choice needs to be explained and defended, not
-just work.
+**SQLite through `node:sqlite`, no ORM, no migrations.** `schema.sql` runs
+with `CREATE TABLE IF NOT EXISTS` on boot. Synchronous queries suit a
+single-process server, and the SQL stays visible instead of being generated.
 
-**Frontend stack** — React + TypeScript, plain React state (no
-Redux/Zustand/React Query — nothing in this app is complex enough to
-justify one, and most live data flows over sockets anyway, not REST), plain
-CSS with custom properties for theming (no Tailwind/CSS-in-JS). The one
-frontend/backend duplication that's deliberate: shared types (`Stroke`,
-`Board`, etc.) are defined independently in both `client/src/types` and
-`server/src/modules/*/`, rather than a shared package in an npm-workspaces
-monorepo — avoids workspace tooling for a small amount of duplication.
+**Socket.io over raw WebSockets** for reconnection with backoff and
+room-based broadcasting. Both would otherwise be hand-written, and the
+reconnection logic is the part that's easy to get subtly wrong.
 
-**Canvas rendering** — a native `<canvas>` via a React ref and the raw
-Canvas 2D API, not a wrapper library (Fabric.js/Konva). React owns the
-surrounding UI; the canvas itself is drawn to imperatively. Strokes are
-drawn incrementally (one segment per point) while active, and only fully
-redrawn from state on resize, undo/redo, clear, or (re)join — resizing a
-canvas clears its pixel buffer as a browser side-effect, so a
-"redraw everything from current state" path has to exist unconditionally
-for responsive layouts to work at all. Remote cursors are DOM overlays,
-never drawn into canvas pixels.
+**Plain React state, no Redux or Zustand or React Query.** Most live data
+arrives over the socket, not REST, so there's little to cache or invalidate.
+State is split across four hooks by lifetime: session, board connection,
+canvas, cursors.
 
-**Data model** — boards are multi (not one shared canvas); a board's
-drawing state is a JSON blob of strokes on the `Board` row, not a normalized
-per-stroke table — strokes aren't persisted per-event, so there's nothing to
-normalize. Persistence is the server writing its own board session on a
-debounce (and on the last person leaving), not each client saving its copy:
-one writer instead of N racing on the same row, and no work lost because
-nobody pressed a button.
-Undo/redo is per-user and lives in server memory per active board session,
-not persisted — it's scoped to the live editing session, the same way
-Figma/Google Docs don't guarantee undo history survives a reload either.
+**Plain CSS with custom properties.** One stylesheet, sectioned by feature,
+with a token layer that carries a dark theme. No Tailwind, no CSS-in-JS.
 
-**Real-time sync** — strokes are streamed point-by-point over Socket.io as
-they're drawn (not batched on pointer-up), so collaborators watch a line
-being drawn live rather than see it "pop in" once finished. A client
-resyncs by receiving full current state on every join/rejoin rather than
-replaying missed events, which stays correct by construction with no event
-log to maintain.
+**A native canvas, drawn imperatively.** No Fabric.js or Konva. React owns
+the surrounding UI; strokes go straight to the 2D context through a ref,
+segment by segment. Full redraws happen only on resize, undo, redo, clear
+and join — a resize clears the pixel buffer as a browser side effect, so a
+redraw-from-state path has to exist regardless.
 
-**Authentication** — real accounts (email + password + a unique username),
-not just a display name, since the challenge overview lists authentication
-as core rather than optional. JWT in an httpOnly cookie is the single
-credential shared by REST and the Socket.io handshake. Login accepts either
-username or email as the identifier, since users forget which one they
-signed up with.
+**A board's drawing is one JSON blob**, not a normalised stroke table.
+Nothing queries individual strokes, and live drawing never touches the
+database, so there's nothing to normalise.
+
+**The server owns persistence.** It writes its own in-memory board session on
+a debounce, and again when the last person leaves, rather than each client
+saving its copy. One writer instead of several racing on the same row, and
+nothing lost because nobody pressed a button.
+
+**Undo is per user and lives in memory** for the length of a session. It
+isn't persisted, the same way Figma and Google Docs don't promise undo
+survives a reload. Only the resulting state is saved.
+
+**Clients resync by receiving full state on every join**, rather than
+replaying missed events. Correct by construction, with no event log to
+maintain or reconcile.
+
+**A JWT in an httpOnly cookie**, as the single credential for both REST and
+the Socket.io handshake. There's no `Authorization` header anywhere. Login
+takes either a username or an email, because people forget which they used.
+
+**Types are duplicated between client and server** rather than shared through
+an npm workspace. A handful of interfaces isn't worth the tooling.
+
+### Known limits
+
+Board state lives in one process, so running more than one instance would
+need Redis and the Socket.io adapter. There's no rate limiting. Inviting
+someone requires them to already have an account. No automated tests ship
+with the project.
