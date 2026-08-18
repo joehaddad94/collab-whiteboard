@@ -1,140 +1,148 @@
 # Collab Whiteboard — Client
 
-React + TypeScript frontend, built with Vite. Plain CSS (no framework), plain
-React state (no Redux/Zustand/React Query) — see the root
-[`README.md`](../README.md#technical-decisions) for why.
+React 19 + TypeScript, built with Vite. Plain CSS, no UI framework. No Redux,
+Zustand or React Query — nothing here is complex enough to need one, and most
+live data arrives over a socket rather than through REST.
 
 ## Setup
 
 ```bash
 cd client
 npm install
-cp .env.example .env   # defaults are fine for local dev against the server's default port
+cp .env.example .env    # defaults work against the server's default port
 npm run dev
 ```
 
-Opens on `http://localhost:5173`. The backend needs to be running too — see
-[`server/README.md`](../server/README.md) — the client won't do anything
-useful on its own.
+Opens on `http://localhost:5173`. The server has to be running too, see
+[`server/README.md`](../server/README.md).
 
-### Environment variables (`.env`)
-
-| Variable | Default | Notes |
+| Variable | Default | |
 |---|---|---|
-| `VITE_API_BASE` | `http://localhost:4000` | Both the REST base URL and the Socket.io connection target. |
+| `VITE_API_BASE` | `http://localhost:4000` | REST base URL and Socket.io target |
 
-## Scripts
+Vite inlines this at build time, so it isn't read at runtime. Pointing a build
+at a different backend means rebuilding.
 
-| Command | Does |
+| | |
 |---|---|
-| `npm run dev` | Vite dev server with HMR. |
-| `npm run build` | Type-check (`tsc -b`) then production build to `dist/`. |
-| `npm run preview` | Serve the production build locally. |
-| `npm run lint` | oxlint. |
+| `npm run dev` | dev server with HMR |
+| `npm run build` | `tsc -b` then production build |
+| `npm run preview` | serve the build |
+| `npm run lint` | oxlint |
 
-## Features
-
-### Auth
-Sign up with an email, a unique username (3-20 letters/numbers), and a
-password (8+ characters). Log in with **either your username or your email**,
-plus the password. Session persists via an httpOnly
-cookie; refreshing the page keeps you logged in until the token expires (7
-days) or you log out.
-
-### Boards
-`/boards` lists every board you're a member of, as a card grid, with a role
-badge (Owner/Editor), and when it was last edited. Create one from the input
-at the top. Owners can rename or delete a board inline; either action needs
-confirmation first (a real dialog, not a browser `confirm()`). Click anywhere
-on a card to open it.
-
-The list refreshes itself when you return to the tab, so a board someone
-shared with you while you were elsewhere is there when you look, rather than
-waiting for a manual reload. There's no push for this — the socket connection
-is per-board, so this page has no live channel of its own.
-
-### The whiteboard
-`/boards/:id` — a full-screen canvas. The floating toolbar (bottom center)
-has pen/eraser, 6 preset colors, a brush-size slider, and undo/redo/clear.
-Clearing asks for confirmation, since it affects everyone on the board and
-can't be undone. Drawing, erasing, and undo/redo all sync live to everyone
-else connected to the same board as you make them — there's no save step
-required to see each other's changes in real time.
-
-Boards **autosave** — there's no Save button. The server writes a board a
-couple of seconds after it stops changing, and again when the last person
-leaves, so nothing is lost by forgetting to save. The status text next to the
-board title ("Saved" / "Unsaved changes") reflects what the server has
-actually written, not what this browser thinks it sent.
-
-Real-time sync and saving are still two different things: the live drawing
-you see is relayed by the server without touching the database per stroke,
-and persistence is what makes a board survive a restart or reload correctly
-after it goes idle.
-
-If the connection drops, drawing is **paused** rather than accepted and
-thrown away — the canvas stops taking input and says so, because anything
-drawn while disconnected never reaches the server and would be replaced by
-the full board state on reconnect.
-
-### Presence & cursors
-Everyone currently viewing the board shows up as an avatar chip in the
-header (you're labeled "You"), live, as people join and leave. Move your
-mouse over the canvas and everyone else sees a labeled, colored cursor
-tracking it.
-
-### People
-The "People" button opens a dialog listing everyone with access to the board,
-with their role and a green dot for anyone currently connected. Anyone on the
-board can open it — seeing who else has access isn't an owner-only concern.
-
-Owners additionally get to invite and remove from here. Invite is by
-**username** — the same name people are shown by everywhere else in the app,
-matched case-insensitively — and the field checks as you type, so "no account
-with that username", "already on this board", or a confirmed match appears
-before you submit rather than after. They're added as an Editor immediately,
-with no accept step, and the list refreshes so they appear in it. Removing
-takes a second click to confirm in the row, and takes effect immediately — if
-that person is on the board right now, they're dropped from it.
-
-Everyone other than the owner gets **Leave** on their own row. The owner
-can't leave their own board — it would be left with nobody able to manage it,
-so they delete it instead. Being removed, leaving, or
-having a board deleted under you all return you to the board list with a note
-saying which happened, rather than dropping you there unexplained.
-
-Note this is *membership*, which is a different question from *presence*: the
-avatar chips in the header show who is connected this second and update live
-over the socket, while this dialog shows who is allowed in.
-
-### Chat
-Toggle the chat panel from the header icon. Per-board, persisted (not just
-for people currently online — history loads when you open a board), and
-delivered in real time.
-
-### Responsive
-Below ~720px wide, the header wraps instead of overflowing, the chat panel
-becomes a full-screen overlay instead of squeezing the canvas down to
-nothing, and the toolbar scrolls horizontally instead of getting clipped.
-
-## Project structure
-
-Every page and every component with real logic (state, effects, handlers)
-is a folder: `index.tsx` (markup only) + `useX.ts` (the logic) — e.g.
-`pages/BoardPage/index.tsx` + `useBoardPage.ts`. Purely presentational
-components with nothing to split out (`Toolbar`, `UserList`, icons) stay a
-single file. `ErrorBoundary` is the one forced exception — React has no hook
-equivalent for `getDerivedStateFromError`/`componentDidCatch`, so it has to
-be a class component.
+## How it's put together
 
 ```
 src/
-  pages/            LoginPage, SignupPage, BoardListPage, BoardPage
-  components/       Whiteboard, Toolbar, UserList, CursorOverlay, ChatPanel,
-                     PeopleDialog, Dialog, ConfirmDialog, Avatar, icons,
-                     ErrorBoundary
-  hooks/            useAuth, useApi, useBoardSocket
-  lib/              worldView (board coordinate space), formatRelativeTime
-  types/            shared types (deliberately duplicated from the backend's
-                     own types, not a shared package - see root README)
+  pages/        LoginPage, SignupPage, BoardListPage, BoardPage
+  components/   Whiteboard, Toolbar, UserList, CursorOverlay, ChatPanel,
+                PeopleDialog, Dialog, ConfirmDialog, Avatar, icons,
+                ErrorBoundary
+  hooks/        useAuth, useApi, useBoardSocket
+  lib/          worldView (coordinate space), formatRelativeTime
+  types/        shared shapes, duplicated from the backend on purpose
 ```
+
+Anything with real logic is a folder: `index.tsx` holds the markup, `useX.ts`
+holds the state, effects and handlers. So `BoardPage/index.tsx` reads as a
+description of the screen, and `useBoardPage.ts` is where the thinking is.
+Components with nothing to separate (`Toolbar`, `UserList`, `icons`) stay a
+single file. `ErrorBoundary` is a class, because React still has no hook
+equivalent of `getDerivedStateFromError`.
+
+### Where state lives
+
+Four owners, deliberately kept apart:
+
+- **`useAuth`** — the session. Context, because everything needs it. On mount
+  it calls `/api/auth/me`, since the cookie is httpOnly and JavaScript can't
+  read it: asking the server is the only way to know whether you're logged in.
+- **`useBoardSocket`** — one board's live connection. Presence, chat, save
+  status, connection state.
+- **`useWhiteboard`** — the canvas. Strokes, tools, pointer handling.
+- **`useCursorOverlay`** — other people's cursors, and nothing else.
+
+Cursors get their own hook for a specific reason. `cursor-update` is by far
+the highest-frequency event a client receives, roughly 25 a second per other
+user. Holding that in `useBoardSocket` would re-render `BoardPage` and every
+child on every mouse twitch. Isolated, a moving cursor re-renders one overlay.
+
+`Toolbar`, `UserList` and `Whiteboard` are memoised, which is only worth
+anything if their props are stable, so the callbacks passed to them are
+wrapped in `useCallback`. One unstable prop and `memo` does nothing.
+
+### The canvas
+
+Strokes are drawn imperatively through a ref, not by re-rendering. A pointer
+move appends a segment straight to the 2D context; React never sees it. The
+`strokes` state exists for full redraws only — resize, undo, redo, joining a
+board — which is also why the same data is held in a ref alongside it. The ref
+is what the draw code reads, because it's always current; the state is what
+triggers a re-render when something structural changes.
+
+Repainting the whole canvas per mouse move would be wasted work, and routing
+every point through React state would be worse.
+
+### Coordinates
+
+The board is a fixed 1920×1080 logical surface. Points are stored and sent in
+those units, and each client computes a fit-to-container transform, so two
+people on different screen sizes see the same drawing rather than the same
+pixels. Drawing is clipped to that page, and the page is drawn as a visible
+sheet so the margin beside it doesn't look drawable when it isn't.
+
+Before this, strokes were in raw CSS pixels: the same stroke landed somewhere
+different on every screen, and resizing your own window moved the drawing
+under you.
+
+## What it does
+
+**Auth.** Email, a unique username (3–20 letters and numbers), password of 8+.
+Log in with either the username or the email. The session survives a refresh
+for 7 days.
+
+**Boards.** `/boards` is a card grid of everything you're a member of, with
+role and last-edited time. Owners can rename and delete inline, behind a real
+confirmation dialog rather than `confirm()`. The list refetches when you return
+to the tab, so a board shared with you while you were elsewhere is simply there
+— there's no push, because the socket is per-board and this page holds no
+connection.
+
+**Drawing.** Pen and eraser, six colours, a brush size slider with a preview
+dot at the actual size. Undo and redo are per person: you can only undo your
+own strokes. Clear wipes the board for everyone, so it asks first.
+
+**Saving.** There's no Save button. The server writes a couple of seconds after
+changes stop, and again when the last person leaves. The indicator by the board
+title reports what the server actually wrote, not what this browser believes it
+sent.
+
+**Presence and cursors.** Avatar chips in the header for whoever is on the
+board, updating live. Other people's cursors follow their pointers, labelled
+and coloured.
+
+**People.** Lists everyone with access, their role, and a green dot for anyone
+connected right now. Owners can invite by username — the field checks as you
+type, so "no account with that username" or "already on this board" appears
+before you submit. Everyone else gets a Leave button on their own row. Being
+removed, leaving, or having a board deleted under you all return you to the
+board list with a note saying which.
+
+Presence and membership are different questions. The header chips answer who
+is here; this dialog answers who is allowed in.
+
+**Chat.** Per board, persisted, with history on join.
+
+**Offline.** If the connection drops, drawing stops and the canvas says so.
+Anything drawn while disconnected would never reach the server and would be
+wiped by the next full sync, so it's refused rather than silently discarded.
+
+## Responsive and accessibility
+
+Below 720px the header wraps, chat becomes a full-screen overlay instead of
+squeezing the canvas, and the toolbar scrolls sideways rather than clipping.
+
+Dialogs take focus on open, trap Tab, restore focus to whatever opened them,
+and close on Escape. Error messages are `role="alert"`, so a failed login is
+announced rather than silently appearing. Every control has a label; the
+brush-size slider has one too, since a bare range input announces as nothing.
