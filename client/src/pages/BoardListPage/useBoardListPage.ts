@@ -12,9 +12,9 @@ export function useBoardListPage() {
   const [renameValue, setRenameValue] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  // `silent` is for refreshes the user didn't ask for: they shouldn't blank
-  // the list behind a loading message, and if one fails, the boards already on
-  // screen are still valid - replacing them with an error would be a lie.
+  // `silent` is for refreshes the user didn't ask for - they shouldn't blank
+  // the list behind a spinner, and if one fails the boards already on screen
+  // are still valid.
   const loadBoards = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
@@ -36,13 +36,11 @@ export function useBoardListPage() {
     void loadBoards();
   }, [loadBoards]);
 
-  // Someone can share a board with you while you're looking at something else,
-  // and nothing pushes that: the socket is board-scoped, so this page holds no
-  // live connection to be told on. Refetching when the tab comes back turns
-  // "reload to find out" into "it's there when you look".
-  //
-  // Skipped mid-rename, so an inline edit isn't yanked out from under you by a
-  // refresh you didn't ask for.
+  // Someone can share a board with you while you're elsewhere, and nothing
+  // pushes it - the socket is board-scoped, so this page has no live
+  // connection. Refetching when the tab regains focus means you don't have to
+  // reload to find out. Skipped mid-rename, so an inline edit isn't yanked
+  // away by a refresh you didn't ask for.
   useEffect(() => {
     if (renamingId !== null) return;
 

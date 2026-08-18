@@ -14,16 +14,14 @@ interface UseDialogOptions {
   dialogRef: RefObject<HTMLDivElement | null>;
 }
 
-// Everything a thing claiming aria-modal="true" has to actually do: take focus
-// when it opens, keep Tab inside it, give focus back when it closes, stop the
-// page behind it scrolling, and close on Escape. Declaring aria-modal without
-// any of this tells assistive tech the rest of the page is inert while leaving
-// it fully reachable.
+// What a dialog claiming aria-modal="true" actually has to do: take focus on
+// open, keep Tab inside, hand focus back on close, stop the page behind it
+// scrolling, and close on Escape. Claiming aria-modal without these tells
+// assistive tech the rest of the page is inert while leaving it reachable.
 export function useDialog({ onClose, dialogRef }: UseDialogOptions) {
   useEffect(() => {
     const node = dialogRef.current;
-    // Captured before focus moves, so it can be handed back on close - losing
-    // your place in the page is the usual cost of a dialog that doesn't.
+    // Captured before focus moves, so it can be handed back on close.
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";

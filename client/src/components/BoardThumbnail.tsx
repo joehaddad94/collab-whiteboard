@@ -10,9 +10,8 @@ interface BoardThumbnailProps {
   boardId: number;
 }
 
-// Purely decorative, deterministic per board (not derived from real stroke
-// data) - just enough visual variety so the board grid doesn't read as a
-// wall of identical cards.
+// Purely decorative and deterministic per board - not derived from real
+// strokes. Just enough variety that the grid doesn't read as identical cards.
 export function BoardThumbnail({ boardId }: BoardThumbnailProps) {
   const path = THUMB_PATHS[boardId % THUMB_PATHS.length];
   const color = THUMB_COLORS[boardId % THUMB_COLORS.length];

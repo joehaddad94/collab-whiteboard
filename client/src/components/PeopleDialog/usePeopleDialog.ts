@@ -40,16 +40,16 @@ export function usePeopleDialog({
 
   const [pendingRemovalId, setPendingRemovalId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
-  // Keyed by user so the message lands in the row it belongs to, rather than
-  // under a list that may have scrolled away from it.
+  // Keyed by user so the message lands in its own row - under the list, it
+  // can scroll out of sight of whatever caused it.
   const [rowError, setRowError] = useState<{
     userId: number;
     message: string;
   } | null>(null);
 
-  // Online status is derived from the same live socket state the header chips
-  // use, so the list stays current while the dialog is open without this hook
-  // subscribing to anything itself.
+  // Online status comes from the same socket state the header chips use, so
+  // the list stays current while the dialog is open without subscribing to
+  // anything here.
   const people = useMemo<PersonRow[]>(() => {
     const onlineIds = new Set(connectedUsers.map((u) => u.userId));
     return members
@@ -62,10 +62,10 @@ export function usePeopleDialog({
       });
   }, [members, connectedUsers]);
 
-  // Checks the typed username against the server as you go, so "no such user"
-  // arrives while you can still fix it instead of after you commit. Debounced,
-  // and every run cancels the previous one's result - responses can land out
-  // of order, and a stale one would otherwise overwrite a newer answer.
+  // Checks the username against the server as you type, so "no such user"
+  // shows up while you can still fix it. Debounced, and each run cancels the
+  // last one's result - responses can land out of order, and a stale one
+  // would overwrite a newer answer.
   useEffect(() => {
     // Whatever the last invite said is about the previous name, not this one.
     setInviteMessage(null);
@@ -167,8 +167,8 @@ export function usePeopleDialog({
       "Failed to remove",
     );
 
-  // Leaving is removing yourself - the same endpoint, which the server now
-  // allows for your own membership.
+  // Leaving is removing yourself - same endpoint, which the server allows
+  // for your own membership.
   const leaveBoard = (userId: number) =>
     runRowAction(
       userId,

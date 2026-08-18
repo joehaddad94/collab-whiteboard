@@ -23,17 +23,28 @@ export const Whiteboard = memo(function Whiteboard({
   disabled = false,
   onStrokesChange,
 }: WhiteboardProps) {
-  const { containerRef, canvasRef, view, handlePointerDown, handlePointerMove, handlePointerUp } =
-    useWhiteboard({ userId, tool, color, brushSize, socket, disabled, onStrokesChange });
+  const {
+    containerRef,
+    canvasRef,
+    view,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+  } = useWhiteboard({
+    userId,
+    tool,
+    color,
+    brushSize,
+    socket,
+    disabled,
+    onStrokesChange,
+  });
 
   return (
     <div
       ref={containerRef}
       className={`whiteboard-container tool-${tool} ${disabled ? "is-disabled" : ""}`}
     >
-      {/* The drawable surface is a fixed-aspect page scaled to fit, so it
-          needs to be visible - otherwise the margin beside it on a window
-          that doesn't match its shape looks drawable but silently isn't. */}
       <div
         className="whiteboard-page"
         style={{

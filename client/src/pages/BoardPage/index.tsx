@@ -129,9 +129,9 @@ export function BoardPage() {
           {loadError}
         </p>
       )}
-      {/* A board that failed to load also fails to join, so both errors fire
-          for one problem - two stacked banners saying the same thing, pushing
-          the canvas down. The load failure is the one that explains it. */}
+      {/* A board that fails to load also fails to join, so both errors fire
+          for one problem and stack two banners saying the same thing. The
+          load failure is the one that explains it. */}
       {!loadError && socketError && (
         <p className="form-error board-page-banner" role="alert">
           {socketError}{" "}
@@ -143,10 +143,9 @@ export function BoardPage() {
 
       <div className="board-canvas-area">
         <div className="board-canvas-region">
-          {/* Drawing while disconnected would be discarded without warning:
-              the server never receives it, and the next board-joined replaces
-              local state wholesale. Say so and stop accepting input, rather
-              than letting the work disappear silently. */}
+          {/* Drawing while disconnected gets discarded - the server never
+              receives it, and the next board-joined replaces local state
+              wholesale. Say so and stop accepting input. */}
           {!connected && (
             <div className="canvas-paused" role="status">
               <span className="dot dot-pending" />

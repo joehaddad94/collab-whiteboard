@@ -14,10 +14,9 @@ interface DialogProps {
   className?: string;
 }
 
-// The shell every dialog shares: the backdrop, the escape/overlay-click
-// dismissal, and the labelled role="dialog" wiring. Extracted so a second
-// dialog doesn't mean a second copy of all of it - the parts that were easy
-// to get subtly different are exactly the accessibility ones.
+// The shell every dialog shares: backdrop, escape/overlay-click dismissal,
+// and the labelled role="dialog" wiring. Extracted so a second dialog isn't a
+// second copy - the easy parts to get subtly wrong are the accessibility ones.
 export function Dialog({
   title,
   children,

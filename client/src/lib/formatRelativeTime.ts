@@ -1,7 +1,7 @@
-// SQLite's datetime('now') returns UTC as "YYYY-MM-DD HH:MM:SS" - a space
-// separator and no zone marker, which JS parses as *local* time. Left alone
-// that reads hours off the clock in either direction depending on the viewer's
-// offset, so the separator and the Z have to be put back before parsing.
+// SQLite's datetime('now') returns UTC as "YYYY-MM-DD HH:MM:SS" - space
+// separator, no zone marker - which JS parses as local time. That's hours off
+// in either direction depending on the viewer, so put the T and the Z back
+// before parsing.
 function parseSqliteUtc(value: string): Date {
   return new Date(`${value.replace(" ", "T")}Z`);
 }

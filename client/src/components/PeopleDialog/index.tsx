@@ -16,9 +16,8 @@ function statusMessage(status: InviteeStatus): string {
       return "Already on this board";
     case "ok":
       return `${status.username} found`;
-    // "unknown" means the check itself failed. Saying nothing is right: the
-    // invite still works, and a warning about a failed check would only be
-    // noise the user can't act on.
+    // "unknown" means the check itself failed. Say nothing - the invite still
+    // works, and a warning they can't act on is just noise.
     default:
       return "";
   }
@@ -87,8 +86,8 @@ export function PeopleDialog({
   return (
     <Dialog title="People" onClose={onClose} showCloseButton className="people-dialog">
       {/* An empty list and a failed fetch look identical, so they have to say
-          which they are - otherwise a broken request reads as "nobody has
-          access to this board", which is never true. */}
+          which - a broken request otherwise reads as "nobody has access",
+          which is never true. */}
       {membersLoading && <p className="people-state">Loading people…</p>}
 
       {!membersLoading && membersError && (
@@ -203,9 +202,9 @@ export function PeopleDialog({
             </button>
           </div>
 
-          {/* A live region rather than aria-describedby: the text appears in
-              response to typing, not to the field being focused, and pairing
-              both tends to get it announced twice. */}
+          {/* A live region rather than aria-describedby - the text appears in
+              response to typing, not to focus, and using both tends to get it
+              announced twice. */}
           <p
             id={statusId}
             className={`people-feedback people-invite-status ${statusTone(inviteeStatus.kind)}`}

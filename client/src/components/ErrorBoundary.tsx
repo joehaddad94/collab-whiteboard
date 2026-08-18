@@ -37,9 +37,9 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
 
           <div className="error-boundary-actions">
-            {/* Both are hard navigations rather than router calls: whatever
-                broke is still mounted, and asking React to re-render its way
-                out tends to land straight back here. */}
+            {/* Hard navigations, not router calls - whatever broke is still
+                mounted, and asking React to re-render its way out usually
+                lands straight back here. */}
             <button
               type="button"
               className="btn btn-primary"
@@ -56,9 +56,9 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {/* The exception text is for whoever reports the bug, not for the
-              person hitting it - it used to be the entire body of this
-              screen, where it read as alarming and meant nothing. */}
+          {/* The exception text is for whoever reports the bug, not the
+              person hitting it - alarming and meaningless as the main body
+              of the screen. */}
           <details className="error-boundary-details">
             <summary>Technical details</summary>
             <code>{this.state.error.message}</code>

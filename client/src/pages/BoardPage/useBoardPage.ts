@@ -70,12 +70,10 @@ export function useBoardPage() {
     };
   }, [boardId]);
 
-  // Membership changes come from REST, not sockets, so there's nothing to push
-  // an update - the People dialog calls this after inviting or removing. It
-  // also refreshes the header's role badges, which read the same list.
-  // This list used to only feed role badges, where failing quietly was fine.
-  // It now backs the People dialog too, where an empty list is a claim that
-  // nobody has access - so a failure has to be reported as one.
+  // Membership changes come over REST, not sockets, so nothing pushes an
+  // update - the People dialog calls this after inviting or removing, and the
+  // header's role badges read the same list. Failures have to surface: an
+  // empty People dialog is a claim that nobody has access, which is never true.
   const refreshMembers = useCallback(async () => {
     if (!Number.isInteger(boardId)) return;
     setMembersLoading(true);
@@ -123,10 +121,10 @@ export function useBoardPage() {
     setSaveStatus("saved");
   }, [boardId]);
 
-  // useCallback here isn't optional cleanup - Whiteboard is memoized, and an
-  // unstable onStrokesChange reference would defeat that on every render.
-  // The strokes themselves aren't needed: the server holds the copy that gets
-  // persisted, so this only has to notice that something changed.
+  // Whiteboard is memoized, so an unstable onStrokesChange would defeat it on
+  // every render - the useCallback isn't optional. The strokes themselves
+  // aren't needed; the server holds what gets persisted, so this only has to
+  // notice that something changed.
   const handleStrokesChange = useCallback(() => {
     // The first strokes-change per board is the initial board-joined hydrate,
     // not a real edit - only mark unsaved for changes after that.
@@ -137,9 +135,7 @@ export function useBoardPage() {
     setSaveStatus("unsaved");
   }, []);
 
-  // There's nothing to press: the server writes the board on its own and
-  // reports it here, so "saved" is a fact from the server rather than a
-  // conclusion this client draws about its own request.
+  // No Save button - the server writes on its own and reports it here.
   useEffect(() => {
     if (!lastSavedAt) return;
     setSaveStatus("saved");
@@ -168,8 +164,8 @@ export function useBoardPage() {
     setShowClearConfirm(false);
   }
 
-  // UserList is memoized - without useMemo this allocates a new array every
-  // render (even ones unrelated to presence/membership), which would defeat it.
+  // UserList is memoized - without useMemo this builds a new array every
+  // render, including ones unrelated to presence, and defeats it.
   const onlineMembers = useMemo(() => {
     const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
     return connectedUsers.map((u) => ({

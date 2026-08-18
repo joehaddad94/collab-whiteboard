@@ -29,9 +29,8 @@ export function BoardListPage() {
     confirmDelete,
   } = useBoardListPage();
 
-  // Set by BoardPage when you're removed from a board, when one is deleted
-  // out from under you, or when you leave - all of which used to drop you
-  // here with no explanation.
+  // Set by BoardPage when you're removed, when a board is deleted under you,
+  // or when you leave - otherwise you land here with no explanation.
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
   return (
