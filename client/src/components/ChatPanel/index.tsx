@@ -11,8 +11,6 @@ interface ChatPanelProps {
 }
 
 function formatTime(createdAt: string): string {
-  // SQLite's datetime('now') is UTC, space-separated with no offset -
-  // reparse as ISO/UTC so it doesn't get misread as local time.
   const date = new Date(`${createdAt.replace(" ", "T")}Z`);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

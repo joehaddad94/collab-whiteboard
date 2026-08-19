@@ -16,8 +16,6 @@ function statusMessage(status: InviteeStatus): string {
       return "Already on this board";
     case "ok":
       return `${status.username} found`;
-    // "unknown" means the check itself failed. Say nothing - the invite still
-    // works, and a warning they can't act on is just noise.
     default:
       return "";
   }
@@ -36,8 +34,6 @@ interface PeopleDialogProps {
   membersError: string | null;
   connectedUsers: ConnectedUser[];
   currentUserId: number | null;
-  /** Owners get the invite field and the per-row actions; everyone else can
-      still see who has access, and can leave. */
   canManage: boolean;
   onMembersChanged: () => Promise<void> | void;
   onLeft: () => void;
@@ -75,7 +71,6 @@ export function PeopleDialog({
     leaveBoard,
   } = usePeopleDialog({ boardId, members, connectedUsers, onMembersChanged });
 
-  // Generated rather than hardcoded, for the same reason the dialog title is.
   const usernameId = useId();
   const statusId = useId();
 
@@ -85,9 +80,6 @@ export function PeopleDialog({
 
   return (
     <Dialog title="People" onClose={onClose} showCloseButton className="people-dialog">
-      {/* An empty list and a failed fetch look identical, so they have to say
-          which - a broken request otherwise reads as "nobody has access",
-          which is never true. */}
       {membersLoading && <p className="people-state">Loading people…</p>}
 
       {!membersLoading && membersError && (
@@ -145,9 +137,6 @@ export function PeopleDialog({
                     </>
                   ) : (
                     <>
-                      {/* Anyone can leave; only the owner can remove someone
-                          else. The owner can't leave their own board - they
-                          delete it instead. */}
                       {isSelf && person.role !== "owner" && (
                         <button
                           type="button"
@@ -202,9 +191,6 @@ export function PeopleDialog({
             </button>
           </div>
 
-          {/* A live region rather than aria-describedby - the text appears in
-              response to typing, not to focus, and using both tends to get it
-              announced twice. */}
           <p
             id={statusId}
             className={`people-feedback people-invite-status ${statusTone(inviteeStatus.kind)}`}

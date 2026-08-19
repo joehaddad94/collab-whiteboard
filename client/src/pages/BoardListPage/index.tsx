@@ -29,8 +29,6 @@ export function BoardListPage() {
     confirmDelete,
   } = useBoardListPage();
 
-  // Set by BoardPage when you're removed, when a board is deleted under you,
-  // or when you leave - otherwise you land here with no explanation.
   const notice = (useLocation().state as { notice?: string } | null)?.notice;
 
   return (
@@ -103,9 +101,6 @@ export function BoardListPage() {
                         <span className="board-name">{board.name}</span>
                         <span className="board-meta">
                           <span className="role-badge">{board.role}</span>
-                          {/* The list is ordered by updated_at, so showing it
-                              explains the order rather than leaving it to
-                              look arbitrary. */}
                           <time
                             dateTime={board.updated_at}
                             title={formatAbsoluteTime(board.updated_at)}

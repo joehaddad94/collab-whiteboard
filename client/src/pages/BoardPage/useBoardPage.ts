@@ -70,10 +70,6 @@ export function useBoardPage() {
     };
   }, [boardId]);
 
-  // Membership changes come over REST, not sockets, so nothing pushes an
-  // update - the People dialog calls this after inviting or removing, and the
-  // header's role badges read the same list. Failures have to surface: an
-  // empty People dialog is a claim that nobody has access, which is never true.
   const refreshMembers = useCallback(async () => {
     if (!Number.isInteger(boardId)) return;
     setMembersLoading(true);
@@ -108,7 +104,6 @@ export function useBoardPage() {
     });
   }, [leaveReason, navigate]);
 
-  // Leaving under your own steam isn't an eviction, so it gets its own wording.
   const handleLeftBoard = useCallback(() => {
     navigate("/boards", {
       replace: true,
@@ -121,13 +116,7 @@ export function useBoardPage() {
     setSaveStatus("saved");
   }, [boardId]);
 
-  // Whiteboard is memoized, so an unstable onStrokesChange would defeat it on
-  // every render - the useCallback isn't optional. The strokes themselves
-  // aren't needed; the server holds what gets persisted, so this only has to
-  // notice that something changed.
   const handleStrokesChange = useCallback(() => {
-    // The first strokes-change per board is the initial board-joined hydrate,
-    // not a real edit - only mark unsaved for changes after that.
     if (!hasHydratedRef.current) {
       hasHydratedRef.current = true;
       return;
@@ -135,14 +124,11 @@ export function useBoardPage() {
     setSaveStatus("unsaved");
   }, []);
 
-  // No Save button - the server writes on its own and reports it here.
   useEffect(() => {
     if (!lastSavedAt) return;
     setSaveStatus("saved");
   }, [lastSavedAt]);
 
-  // Toolbar is memoized, so these need stable identity too - same reasoning
-  // as handleStrokesChange above.
   const undo = useCallback(() => {
     socket?.emit("undo");
   }, [socket]);
@@ -164,8 +150,6 @@ export function useBoardPage() {
     setShowClearConfirm(false);
   }
 
-  // UserList is memoized - without useMemo this builds a new array every
-  // render, including ones unrelated to presence, and defeats it.
   const onlineMembers = useMemo(() => {
     const roleByUserId = new Map(members.map((m) => [m.userId, m.role]));
     return connectedUsers.map((u) => ({

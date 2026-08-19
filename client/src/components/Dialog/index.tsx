@@ -6,17 +6,11 @@ interface DialogProps {
   title: string;
   children: ReactNode;
   onClose: () => void;
-  /** Rendered in the dialog's footer. Omit for dialogs with no action row. */
   actions?: ReactNode;
-  /** A close button in the header is right for a dialog you dismiss, wrong for
-      one that asks a question and expects an answer from its action row. */
   showCloseButton?: boolean;
   className?: string;
 }
 
-// The shell every dialog shares: backdrop, escape/overlay-click dismissal,
-// and the labelled role="dialog" wiring. Extracted so a second dialog isn't a
-// second copy - the easy parts to get subtly wrong are the accessibility ones.
 export function Dialog({
   title,
   children,
@@ -27,16 +21,12 @@ export function Dialog({
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   useDialog({ onClose, dialogRef });
-  // Generated, not hardcoded: two dialogs open at once would otherwise both
-  // claim the same id and aria-labelledby would resolve to the wrong one.
   const titleId = useId();
 
   return (
     <div className="dialog-overlay" onClick={onClose}>
       <div
         ref={dialogRef}
-        // Focusable so the dialog itself can hold focus when it has no
-        // focusable children yet.
         tabIndex={-1}
         className={`dialog ${className ?? ""}`}
         role="dialog"

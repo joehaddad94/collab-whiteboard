@@ -22,8 +22,6 @@ interface UseWhiteboardOptions {
 
 const CURSOR_THROTTLE_MS = 40;
 
-// Points and brushSize are in world units. The context already holds the
-// world -> device transform, so draw as-is and scaling comes for free.
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   if (stroke.points.length === 0) return;
   ctx.globalCompositeOperation =
@@ -43,10 +41,6 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.stroke();
 }
 
-// Live strokes are painted straight to the canvas, not through React - a
-// re-render per pointer-move would repaint the whole board for one segment.
-// Remote strokes work the same way. `strokes` state is only for full
-// redraws: resize, undo/redo, joining a board.
 export function useWhiteboard({
   userId,
   tool,
@@ -65,28 +59,19 @@ export function useWhiteboard({
   const viewRef = useRef<ViewTransform>(getViewTransform(0, 0));
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
-  // Only positions the page rect in the markup. Drawing and hit-testing read
-  // viewRef, so a resize is correct before React re-renders.
   const [view, setView] = useState<ViewTransform>(() => getViewTransform(0, 0));
 
   useEffect(() => {
     strokesRef.current = strokes;
     onStrokesChange?.(strokes);
-    // onStrokesChange left out on purpose: BoardPage doesn't memoize it, so
-    // including it would re-run this on every parent render instead of only
-    // when strokes change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strokes]);
 
-  // Includes unfinished strokes. Leaving them out would blank whatever people
-  // are drawing right now on every resize, undo, or join.
   function redrawAll() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    // Clear in device space: the context carries the world transform, and only
-    // the backing store's size is known in device pixels.
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -106,8 +91,6 @@ export function useWhiteboard({
     const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    // Setting width/height wipes the context state, transform and clip
-    // included. Both get re-established below, every time.
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
 
@@ -125,8 +108,6 @@ export function useWhiteboard({
         dpr * nextView.offsetX,
         dpr * nextView.offsetY,
       );
-      // Clip to the page so a stroke running off the edge is cut the same for
-      // everyone, not left visible to whoever has a wider window.
       ctx.beginPath();
       ctx.rect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
       ctx.clip();
@@ -141,8 +122,6 @@ export function useWhiteboard({
     const observer = new ResizeObserver(() => resizeCanvas());
     observer.observe(container);
     return () => observer.disconnect();
-    // resizeCanvas/redrawAll left out: they read live refs, not closed-over
-    // state, so they never go stale.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -155,9 +134,6 @@ export function useWhiteboard({
     }) {
       strokesRef.current = payload.strokes;
       setStrokes(payload.strokes);
-      // Seed strokes other people are still drawing - the stroke-point and
-      // stroke-end events that follow carry only a strokeId and need something
-      // to attach to. Copy the points, since they get mutated in place.
       remoteInProgressRef.current = new Map(
         (payload.inProgressStrokes ?? []).map((stroke) => [
           stroke.id,
@@ -194,13 +170,7 @@ export function useWhiteboard({
       setStrokes((prev) => [...prev, stroke]);
     }
 
-    // Undo/redo/clear go to the whole room including whoever triggered them,
-    // so there's no local-vs-remote branching here like the stroke-* handlers
-    // have. None of the three can be drawn incrementally either, so they all
-    // redraw in full.
     function handleStrokeRemoved({ strokeId }: { strokeId: string }) {
-      // Also covers a stroke abandoned by someone who disconnected mid-draw -
-      // the server sends the same event, and it's still unfinished here.
       remoteInProgressRef.current.delete(strokeId);
       const next = strokesRef.current.filter((s) => s.id !== strokeId);
       strokesRef.current = next;
@@ -218,8 +188,6 @@ export function useWhiteboard({
     function handleBoardCleared() {
       strokesRef.current = [];
       setStrokes([]);
-      // The server drops its in-progress strokes on clear too, so nothing
-      // unfinished here will ever get another point or an end event.
       remoteInProgressRef.current.clear();
       redrawAll();
     }
@@ -246,8 +214,6 @@ export function useWhiteboard({
 
   function getPoint(e: { clientX: number; clientY: number }): Point {
     const rect = canvasRef.current!.getBoundingClientRect();
-    // Quantize once, here - the only place coordinates enter the app - so
-    // canvas, socket and database all carry identical values.
     return quantize(
       screenToWorld(
         { x: e.clientX - rect.left, y: e.clientY - rect.top },
@@ -256,14 +222,10 @@ export function useWhiteboard({
     );
   }
 
-  // A stroke in flight when the connection drops is abandoned. The server
-  // never got its stroke-end, so finishing it locally would just draw
-  // something the next board-joined wipes.
   useEffect(() => {
     if (!disabled || !currentStrokeRef.current) return;
     currentStrokeRef.current = null;
     redrawAll();
-    // redrawAll reads live refs, not closed-over state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled]);
 
@@ -295,8 +257,6 @@ export function useWhiteboard({
   }
 
   function handlePointerMove(e: PointerEvent<HTMLCanvasElement>) {
-    // Socket.io buffers emits while disconnected and flushes them on reconnect,
-    // so staying quiet here also avoids a burst of stale cursor positions.
     if (disabled) return;
     const point = getPoint(e);
 

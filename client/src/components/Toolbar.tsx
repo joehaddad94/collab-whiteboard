@@ -67,9 +67,6 @@ export const Toolbar = memo(function Toolbar({
 
       <div className="toolbar-sep" />
 
-      {/* The dot is the label - drawn at the actual brush size and colour, so
-          the slider shows what it controls instead of leaving you to infer it
-          from a bare track. */}
       <label className="brush-size" title={`Brush size — ${brushSize}px`}>
         <span className="brush-preview" aria-hidden="true">
           <span

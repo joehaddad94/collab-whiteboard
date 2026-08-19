@@ -2,8 +2,6 @@ interface IconProps {
   size?: number;
 }
 
-// Inline SVGs matching the mockup. No icon library - same minimal-dependency
-// line as the plain CSS.
 
 export function BrandIcon({ size = 20 }: IconProps) {
   return (

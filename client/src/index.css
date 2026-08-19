@@ -152,8 +152,6 @@ a {
   filter: brightness(1.06);
 }
 
-/* Ghost still means "secondary", not "invisible" - it keeps a real outline so
-   it reads as something you can press, and only the fill is held back. */
 .btn-ghost {
   border-color: var(--border);
   background: transparent;
@@ -184,8 +182,6 @@ a {
   color: var(--danger);
 }
 
-/* Ghost's hover colour is more specific than .btn-danger, so without this a
-   destructive action would lose its red exactly when you point at it. */
 .btn-ghost.btn-danger,
 .btn-ghost.btn-danger:hover {
   color: var(--danger);
@@ -223,16 +219,12 @@ a {
 
 /* ---------------------------------------- components: inputs ---------------------------------------- */
 
-/* One role pill, used by both the presence chips and the board cards - the two
-   were drifting apart (mono uppercase in an accent pill on one, sans on the
-   other) for something that means exactly the same thing in both places. */
 .input {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--bg-surface);
   color: var(--ink-900);
-  /* Inputs inside a <label> would otherwise inherit its 600. */
   font-weight: 400;
 }
 
@@ -240,15 +232,10 @@ a {
   border-color: var(--accent);
 }
 
-/* Sits beside a button in a flex row and should take the remaining space.
-   Deliberately not min-width: 0 - a flex item's content-based minimum is what
-   stops these fields collapsing, and overriding it here resizes every form
-   that uses it. */
 .input-grow {
   flex: 1;
 }
 
-/* Standalone fields on a page, rather than a control inside a dense panel. */
 .input-lg {
   padding: 10px 12px;
   font-size: 15px;
@@ -284,7 +271,6 @@ a {
   line-height: 1;
 }
 
-/* Count on the People button - a quiet pill rather than a second label. */
 .btn-count {
   display: inline-flex;
   align-items: center;
@@ -434,8 +420,6 @@ a {
 
 /* ----------------------------------------------- pages: auth ----------------------------------------------- */
 
-/* The page-level treatment, shared with .error-boundary: the same situation
-   gets the same answer - one thing to read, centred, on the dotted ground. */
 .auth-page,
 .error-boundary {
   min-height: 100%;
@@ -543,9 +527,6 @@ a {
   transform: translateY(-2px);
 }
 
-/* The whole card (thumbnail + name/role) is one link, so the whole thing is
-   clickable - not just the name text. Rename/Delete stay outside it, since
-   buttons can't nest inside an <a>. */
 .board-list-link {
   display: flex;
   flex-direction: column;
@@ -553,9 +534,6 @@ a {
   color: inherit;
 }
 
-/* Name on its own line so it gets the full card width to truncate into, with
-   role and last-edited demoted to a quieter second line - rather than the name
-   and the badge competing for one row and the name losing. */
 .board-list-link-info {
   display: flex;
   flex-direction: column;
@@ -603,11 +581,6 @@ a {
   height: 100%;
 }
 
-/* Owner actions stay out of the way until the card is pointed at or tabbed
-   into. They keep their space in the layout rather than being removed, so
-   nothing reflows on hover - and pointer-events, not visibility, is what makes
-   them unclickable while hidden, so keyboard focus can still reach them and
-   bring them back into view. */
 .board-list-actions {
   display: flex;
   gap: 6px;
@@ -623,7 +596,6 @@ a {
   pointer-events: auto;
 }
 
-/* Nothing to hover with on a touch screen, so don't hide anything there. */
 @media (hover: none) {
   .board-list-actions {
     opacity: 1;
@@ -697,11 +669,6 @@ a {
   background: var(--ink-400);
 }
 
-/* Everything in this row - presence chips, Invite, the chat toggle - is pinned
-   to one height and one radius, so it reads as a single strip of controls
-   instead of three differently-shaped things that happen to sit in a line.
-   The chips were 28px against ~38px buttons before, which is what made the row
-   look off-centre. */
 .board-page-toolbar .btn,
 .presence-chip,
 .board-presence-empty {
@@ -730,9 +697,6 @@ a {
   min-height: 0;
 }
 
-/* The paper look lives on .whiteboard-page, not here - this is just the
-   surround, and it needs to read as "not the board" so the margin beside a
-   page that doesn't match the window's shape doesn't look drawable. */
 .board-canvas-region {
   position: relative;
   flex: 1;
@@ -760,8 +724,6 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  /* Tighter on the left so the avatar sits just inside the pill, looser on the
-     right where the role badge needs room to breathe. */
   padding: 0 5px 0 5px;
   font-size: 12.5px;
   font-weight: 600;
@@ -772,8 +734,6 @@ a {
   border: 1px solid var(--border);
 }
 
-/* Your own chip carries the accent - a more useful distinction at a glance
-   than colouring by role, which the badge already says in words. */
 .presence-chip-self {
   background: var(--accent-soft);
   border-color: var(--accent-soft-border);
@@ -796,11 +756,6 @@ a {
   touch-action: none;
 }
 
-/* The cursor is the tool you're holding. Both glyphs are the same paths the
-   toolbar buttons draw, so the pointer and the button that selected it are
-   recognisably the same object - filled white with a dark outline, which stays
-   legible on the light page and on the dark surround alike. The hotspot is the
-   working end in each case: the pen's nib, the eraser's rubbing edge. */
 .whiteboard-container.tool-pen canvas {
   cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M4 20l1-4L16 5l3 3L8 19l-4 1Z' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'/><path d='M4 20l1-4L16 5l3 3L8 19l-4 1Z' fill='%23ffffff' stroke='%231b1d22' stroke-width='1.8' stroke-linejoin='round'/></svg>")
       4 20,
@@ -813,8 +768,6 @@ a {
     cell;
 }
 
-/* pointer-events:none on the canvas means its own cursor never applies, so the
-   paused state has to be declared on the container instead. */
 .whiteboard-container.is-disabled {
   cursor: not-allowed;
 }
@@ -823,8 +776,6 @@ a {
   pointer-events: none;
 }
 
-/* Sits above the canvas and the cursor layer - if drawing is paused, that
-   needs to be the most visible thing on the board. */
 .canvas-paused {
   position: absolute;
   top: 14px;
@@ -844,8 +795,6 @@ a {
   font-weight: 600;
 }
 
-/* Positioned from JS - it tracks the fixed-aspect board scaled to fit the
-   container, which is the same rect the canvas clips its drawing to. */
 .whiteboard-page {
   position: absolute;
   background-color: var(--canvas-bg);
@@ -946,7 +895,6 @@ a {
   cursor: pointer;
 }
 
-/* Fixed box so the slider never shifts as the dot inside it grows. */
 .brush-preview {
   display: inline-flex;
   align-items: center;
@@ -961,8 +909,6 @@ a {
   transition: width 0.12s ease, height 0.12s ease, background 0.12s ease;
 }
 
-/* An eraser doesn't lay down colour, so it previews as an outline - showing it
-   filled in the current pen colour would say the opposite of what it does. */
 .brush-preview-dot.is-eraser {
   background: transparent;
   border: 1.5px solid var(--ink-400);
@@ -970,8 +916,6 @@ a {
 
 /* -------------------------------------------- board: cursors -------------------------------------------- */
 
-/* Covers exactly the same box as the canvas - useCursorOverlay measures it to
-   recover the world -> screen transform. */
 .cursor-layer {
   position: absolute;
   inset: 0;
@@ -1086,15 +1030,12 @@ a {
   border-top: 1px solid var(--border);
 }
 
-/* Sunken rather than raised: it sits inside a panel, not on the page. */
 .chat-input .input {
   background: var(--bg-app);
 }
 
 /* -------------------------------------- board: people dialog -------------------------------------- */
 
-/* Wider than a confirm prompt, because it holds a list rather than a
-   sentence. */
 .people-dialog {
   max-width: 420px;
 }
@@ -1105,8 +1046,6 @@ a {
   padding: 0;
   display: flex;
   flex-direction: column;
-  /* Long member lists scroll inside the dialog rather than pushing the invite
-     field off the bottom of the screen. */
   max-height: 320px;
   overflow-y: auto;
 }
@@ -1130,8 +1069,6 @@ a {
   flex-shrink: 0;
 }
 
-/* Ringed in the dialog's own background so it reads as a badge on the avatar
-   rather than a dot that happens to overlap it. */
 .people-online-dot {
   position: absolute;
   right: -1px;
@@ -1177,8 +1114,6 @@ a {
   display: flex;
   gap: 8px;
 }
-/* Narrow dialog: this is the one field that does need to shrink past its
-   content minimum, and the only one that had min-width: 0 before. */
 .people-invite-row .input {
   min-width: 0;
 }
@@ -1200,7 +1135,6 @@ a {
   color: var(--ink-400);
 }
 
-/* Loading / failed / explanatory copy inside the dialog. */
 .people-state {
   margin: 14px 0 0;
   font-size: 13px;
@@ -1219,8 +1153,6 @@ a {
   color: var(--ink-400);
 }
 
-/* Full-width under its own row, so a failure sits with the person it's about
-   rather than at the bottom of a list that may have scrolled. */
 .people-row-error {
   flex: 0 0 100%;
   padding-top: 2px;
@@ -1228,11 +1160,6 @@ a {
   color: var(--danger);
 }
 
-/* A class, not an id - the id is generated by useId() now, which quietly
-   orphaned the old selector. Sits clear of the input above it, and reserves
-   its line so the form doesn't jump as the check resolves. */
-/* Two classes deliberately: this element also carries .people-feedback, whose
-   shorthand margin would win on a tie if the rules ever got reordered. */
 .people-feedback.people-invite-status {
   margin-top: 16px;
   min-height: 1.25em;
@@ -1293,8 +1220,6 @@ a {
   font-family: var(--font-mono);
   font-size: 11.5px;
   line-height: 1.5;
-  /* Exception text is long, unbroken and not ours to reflow - let it wrap
-     rather than stretch the card. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1324,8 +1249,6 @@ a {
     justify-content: flex-end;
   }
 
-  /* Side-by-side chat stops working once the canvas has no room left to
-     give up - become a full-screen overlay instead. */
   .chat-panel {
     position: absolute;
     inset: 0;
@@ -1334,9 +1257,6 @@ a {
     border-left: none;
   }
 
-  /* The floating toolbar is wider than a phone screen with every control
-     visible at once - let it scroll horizontally instead of overflowing
-     off the edges or getting clipped. */
   .toolbar {
     max-width: calc(100% - 24px);
     overflow-x: auto;

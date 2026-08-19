@@ -9,9 +9,6 @@ interface State {
   error: Error | null;
 }
 
-// React only supports error boundaries via class components (no hook
-// equivalent for getDerivedStateFromError/componentDidCatch), so this is
-// the one component that can't follow the index.tsx + useX.ts split.
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };
 
@@ -37,9 +34,6 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
 
           <div className="error-boundary-actions">
-            {/* Hard navigations, not router calls - whatever broke is still
-                mounted, and asking React to re-render its way out usually
-                lands straight back here. */}
             <button
               type="button"
               className="btn btn-primary"
@@ -56,9 +50,6 @@ export class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {/* The exception text is for whoever reports the bug, not the
-              person hitting it - alarming and meaningless as the main body
-              of the screen. */}
           <details className="error-boundary-details">
             <summary>Technical details</summary>
             <code>{this.state.error.message}</code>
