@@ -192,5 +192,4 @@ There are no migrations. `schema.sql` runs with `CREATE TABLE IF NOT EXISTS`,
 which means schema changes don't touch an existing database — delete
 `data/whiteboard.sqlite` and let it rebuild.
 
-Board state lives in one process. Running more than one instance needs Redis
-and the Socket.io adapter.
+Board state lives in one process, so the server runs as a single instance.

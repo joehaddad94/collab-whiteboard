@@ -138,7 +138,6 @@ an npm workspace. A handful of interfaces isn't worth the tooling.
 
 ### Known limits
 
-Board state lives in one process, so running more than one instance would
-need Redis and the Socket.io adapter. There's no rate limiting. Inviting
-someone requires them to already have an account. No automated tests ship
-with the project.
+Board state lives in one process, so the app runs on a single instance.
+There's no rate limiting. Inviting someone requires them to already have
+an account. No automated tests ship with the project.
